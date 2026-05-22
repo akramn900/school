@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SchooLama – Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ══ TOKENS ══════════════════════════════════════════════ */
+:root {
+  --sky:        #C3EBFA;
+  --sky-light:  #EDF9FD;
+  --purple:     #CFCEFF;
+  --purple-light:#F1F0FF;
+  --yellow:     #FAE27C;
+  --yellow-light:#FEFCE8;
+  --bg:         #F7F8FA;
+  --white:      #ffffff;
+  --text:       #1a1a2e;
+  --text-muted: #6b7280;
+  --border:     #e5e7eb;
+  --primary:    #4361EE;
+  --primary-dark:#3451db;
+  --danger:     #ef4444;
+  --success:    #22c55e;
+  --warning:    #f59e0b;
+  --sidebar-w:  260px;
+  --sidebar-w-collapsed: 68px;
+  --topbar-h:   64px;
+  --radius:     12px;
+  --shadow:     0 2px 16px rgba(0,0,0,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top:0; left:0; bottom:0;
+  z-index: 100; transition: width .25s ease;
+  overflow: hidden;
+}
+.sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+.sidebar-logo {
+  display:flex; align-items:center; gap:10px;
+  padding: 20px 18px; border-bottom: 1px solid var(--border);
+  min-height: var(--topbar-h);
+}
+.logo-icon {
+  width:36px; height:36px; min-width:36px;
+  background: var(--primary);
+  border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  color:white; font-weight:700; font-size:16px;
+}
+.logo-text {
+  font-family:'Playfair Display',serif;
+  font-size:20px; color:var(--text);
+  white-space:nowrap; overflow:hidden;
+}
+.sidebar-nav { flex:1; overflow-y:auto; padding: 12px 0; }
+.nav-section-label {
+  font-size:10px; font-weight:700; letter-spacing:.08em;
+  color:var(--text-muted); text-transform:uppercase;
+  padding: 14px 20px 6px;
+  white-space:nowrap; overflow:hidden;
+  transition: opacity .2s;
+}
+.sidebar.collapsed .nav-section-label { opacity:0; }
+.nav-item {
+  display:flex; align-items:center; gap:12px;
+  padding: 10px 18px; margin: 1px 8px;
+  border-radius: 10px; cursor:pointer;
+  transition: background .15s, color .15s;
+  text-decoration:none; color:var(--text-muted);
+  font-size:14px; font-weight:500;
+  white-space:nowrap; overflow:hidden;
+}
+.nav-item:hover { background: var(--bg); color:var(--text); }
+.nav-item.active { background: var(--purple-light); color:var(--primary); }
+.nav-item .nav-icon {
+  font-size:18px; min-width:22px; text-align:center;
+}
+.nav-item .nav-label { white-space:nowrap; overflow:hidden; }
+.sidebar.collapsed .nav-item { justify-content:center; padding:10px; }
+.sidebar.collapsed .nav-label { display:none; }
+.sidebar-footer {
+  padding: 12px; border-top: 1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.user-avatar {
+  width:36px; height:36px; min-width:36px;
+  border-radius:50%; background:var(--sky);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:14px; color:var(--primary);
+}
+.user-info { overflow:hidden; }
+.user-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-role { font-size:11px; color:var(--text-muted); }
+.sidebar.collapsed .user-info { display:none; }
+
+/* ── MAIN ── */
+.main-wrapper {
+  margin-left: var(--sidebar-w);
+  flex:1; display:flex; flex-direction:column;
+  transition: margin-left .25s ease;
+  min-width:0;
+}
+.main-wrapper.collapsed { margin-left: var(--sidebar-w-collapsed); }
+.topbar {
+  height:var(--topbar-h); background:var(--white);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px;
+  padding: 0 24px; position:sticky; top:0; z-index:50;
+}
+.topbar-toggle {
+  background:none; border:none; cursor:pointer;
+  font-size:20px; color:var(--text-muted); padding:4px;
+}
+.search-bar {
+  flex:1; max-width:320px;
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:10px; padding:8px 14px;
+}
+.search-bar input {
+  border:none; background:none; outline:none;
+  font-family:'DM Sans',sans-serif; font-size:14px;
+  color:var(--text); width:100%;
+}
+.topbar-actions { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.topbar-btn {
+  width:38px; height:38px; border-radius:10px;
+  background:var(--bg); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:16px; position:relative;
+  transition: background .15s;
+}
+.topbar-btn:hover { background:var(--border); }
+.badge {
+  position:absolute; top:4px; right:4px;
+  width:8px; height:8px; border-radius:50%;
+  background:var(--danger);
+}
+.page-content { padding:24px; flex:1; }
+
+/* ══ PAGE TITLES ══ */
+.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+.page-title { font-size:22px; font-weight:700; }
+.page-subtitle { font-size:13px; color:var(--text-muted); margin-top:2px; }
+.btn {
+  padding:9px 18px; border-radius:9px; border:none;
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+  cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px;
+}
+.btn-primary { background:var(--primary); color:white; }
+.btn-primary:hover { background:var(--primary-dark); }
+.btn-sm { padding:7px 14px; font-size:12px; }
+.btn-ghost { background:var(--bg); color:var(--text); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--border); }
+.btn-danger { background:#fee2e2; color:var(--danger); }
+.btn-danger:hover { background:#fecaca; }
+
+/* ══ STAT CARDS ══ */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+.stat-card {
+  background:var(--white); border-radius:var(--radius);
+  padding:20px; display:flex; flex-direction:column; gap:12px;
+  border:1px solid var(--border);
+}
+.stat-card .stat-top { display:flex; align-items:center; justify-content:space-between; }
+.stat-card .stat-icon {
+  width:42px; height:42px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px;
+}
+.stat-card .stat-more { font-size:11px; color:var(--text-muted); }
+.stat-card .stat-value { font-size:28px; font-weight:700; }
+.stat-card .stat-label { font-size:13px; color:var(--text-muted); }
+.bg-sky { background:var(--sky); }
+.bg-purple { background:var(--purple); }
+.bg-yellow { background:var(--yellow); }
+.bg-sky-light { background:var(--sky-light); }
+
+/* ══ TABLES ══ */
+.table-card {
+  background:var(--white); border-radius:var(--radius);
+  border:1px solid var(--border); overflow:hidden;
+}
+.table-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border);
+  flex-wrap:wrap; gap:10px;
+}
+.table-title { font-size:15px; font-weight:600; }
+.table-tools { display:flex; align-items:center; gap:8px; }
+.table-search {
+  display:flex; align-items:center; gap:6px;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:8px; padding:7px 12px;
+}
+.table-search input {
+  border:none; background:none; outline:none;
+  font-family:'DM Sans',sans-serif; font-size:13px;
+  width:180px; color:var(--text);
+}
+table { width:100%; border-collapse:collapse; }
+th { font-size:12px; font-weight:600; text-transform:uppercase;
+     letter-spacing:.05em; color:var(--text-muted);
+     padding:12px 20px; text-align:left;
+     border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:14px 20px; font-size:14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#fafafa; }
+.avatar {
+  width:36px; height:36px; border-radius:50%;
+  object-fit:cover; background:var(--sky);
+  display:inline-flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:13px; color:var(--primary);
+}
+.cell-user { display:flex; align-items:center; gap:10px; }
+.cell-user-info .name { font-weight:500; }
+.cell-user-info .sub { font-size:12px; color:var(--text-muted); }
+.badge-pill {
+  display:inline-block; padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:600;
+}
+.badge-blue { background:var(--purple-light); color:var(--primary); }
+.badge-green { background:#dcfce7; color:#15803d; }
+.badge-yellow { background:var(--yellow-light); color:#92400e; }
+.badge-red { background:#fee2e2; color:var(--danger); }
+.badge-gray { background:var(--bg); color:var(--text-muted); }
+.action-btns { display:flex; gap:6px; }
+.icon-btn {
+  width:30px; height:30px; border-radius:7px; border:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; cursor:pointer; transition:all .15s;
+}
+.icon-btn-view { background:var(--sky-light); color:#0284c7; }
+.icon-btn-edit { background:var(--yellow-light); color:#92400e; }
+.icon-btn-del  { background:#fee2e2; color:var(--danger); }
+.icon-btn:hover { opacity:.8; }
+.pagination {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-top:1px solid var(--border);
+  font-size:13px; color:var(--text-muted);
+}
+.page-btns { display:flex; gap:4px; }
+.page-btn {
+  width:32px; height:32px; border-radius:7px;
+  border:1px solid var(--border); background:var(--white);
+  font-size:13px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center;
+  transition:all .15s;
+}
+.page-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+.page-btn:hover:not(.active) { background:var(--bg); }
+
+/* ══ DASHBOARD SPECIFIC ══ */
+.dash-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-template-rows:auto;
+  gap:20px;
+}
+@media(max-width:1200px){ .dash-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:768px){ .dash-grid { grid-template-columns:1fr; } }
+.dash-card {
+  background:var(--white); border-radius:var(--radius);
+  border:1px solid var(--border); padding:20px;
+}
+.dash-card-title { font-size:14px; font-weight:600; margin-bottom:16px; }
+.chart-wrap { position:relative; height:220px; }
+
+/* ══ CALENDAR ══ */
+.calendar-wrap { padding:0; }
+.cal-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.cal-nav-btn {
+  width:30px; height:30px; border-radius:7px;
+  border:1px solid var(--border); background:var(--white);
+  cursor:pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s;
+}
+.cal-nav-btn:hover { background:var(--bg); }
+.cal-title { font-weight:600; font-size:15px; }
+.cal-grid {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  gap:2px;
+}
+.cal-day-name {
+  font-size:11px; font-weight:600; text-align:center;
+  color:var(--text-muted); padding:4px 0; text-transform:uppercase;
+}
+.cal-day {
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; font-size:13px; cursor:pointer;
+  transition:background .15s;
+}
+.cal-day:hover { background:var(--bg); }
+.cal-day.other-month { color:var(--border); }
+.cal-day.today { background:var(--primary); color:white; font-weight:700; }
+.cal-day.has-event { position:relative; }
+.cal-day.has-event::after {
+  content:''; position:absolute; bottom:3px;
+  width:4px; height:4px; border-radius:50%;
+  background:var(--primary);
+}
+.cal-day.today.has-event::after { background:white; }
+
+/* Events list */
+.event-list { display:flex; flex-direction:column; gap:8px; }
+.event-item {
+  display:flex; gap:12px; align-items:flex-start;
+  padding:10px; border-radius:10px;
+  background:var(--bg);
+}
+.event-dot { width:10px; height:10px; min-width:10px; border-radius:50%; margin-top:5px; }
+.event-info .event-title { font-size:13px; font-weight:600; }
+.event-info .event-meta { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+/* Announcements */
+.announcement-item {
+  padding:14px 0; border-bottom:1px solid var(--border);
+}
+.announcement-item:last-child { border-bottom:none; padding-bottom:0; }
+.ann-header { display:flex; justify-content:space-between; margin-bottom:4px; }
+.ann-title { font-size:13px; font-weight:600; }
+.ann-date { font-size:11px; color:var(--text-muted); }
+.ann-body { font-size:13px; color:var(--text-muted); line-height:1.5; }
+
+/* ══ MODAL ══ */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.4);
+  z-index:200; display:none; align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--white); border-radius:16px;
+  width:100%; max-width:520px; max-height:90vh;
+  overflow-y:auto; padding:28px;
+  box-shadow:0 20px 60px rgba(0,0,0,.15);
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+.modal-title { font-size:18px; font-weight:700; }
+.modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-muted); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:13px; font-weight:500; margin-bottom:6px; }
+.form-group input, .form-group select, .form-group textarea {
+  width:100%; padding:10px 14px;
+  border:1.5px solid var(--border); border-radius:9px;
+  font-family:'DM Sans',sans-serif; font-size:14px;
+  color:var(--text); outline:none; transition:border-color .2s;
+  background:var(--white);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--primary); }
+.form-group textarea { min-height:80px; resize:vertical; }
+.modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
+
+/* ══ LOADING ══ */
+.loading { display:flex; align-items:center; justify-content:center; padding:60px; }
+.spinner {
+  width:32px; height:32px; border:3px solid var(--border);
+  border-top-color:var(--primary); border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.empty-state {
+  text-align:center; padding:60px 20px;
+  color:var(--text-muted);
+}
+.empty-state .empty-icon { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-size:14px; }
+
+/* ══ TOAST ══ */
+.toast-container { position:fixed; bottom:24px; right:24px; z-index:300; display:flex; flex-direction:column; gap:8px; }
+.toast {
+  padding:12px 18px; border-radius:10px;
+  font-size:14px; font-weight:500;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+  display:flex; align-items:center; gap:8px;
+  animation:slideInRight .3s ease;
+  min-width:220px;
+}
+@keyframes slideInRight { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+.toast-success { background:#dcfce7; color:#15803d; }
+.toast-error { background:#fee2e2; color:var(--danger); }
+.toast-info { background:var(--purple-light); color:var(--primary); }
+
+/* ══ PROFILE / SINGLE VIEW ══ */
+.profile-card {
+  background:var(--white); border-radius:var(--radius);
+  border:1px solid var(--border); padding:28px;
+  display:flex; gap:24px; align-items:flex-start;
+  flex-wrap:wrap;
+}
+.profile-avatar-big {
+  width:80px; height:80px; border-radius:50%;
+  background:var(--sky); display:flex; align-items:center;
+  justify-content:center; font-size:32px; font-weight:700;
+  color:var(--primary); flex-shrink:0;
+}
+.profile-info h2 { font-size:22px; font-weight:700; margin-bottom:4px; }
+.profile-meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+.profile-meta-item {
+  display:flex; align-items:center; gap:6px;
+  font-size:13px; color:var(--text-muted);
+}
+.info-grid {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px; background:var(--white);
+  border:1px solid var(--border); border-radius:var(--radius); padding:20px;
+}
+.info-item .label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
+.info-item .value { font-size:14px; font-weight:500; margin-top:4px; }
+
+/* ══ ATTENDANCE ══ */
+.att-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(36px,1fr)); gap:4px; }
+.att-day {
+  aspect-ratio:1; border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:600;
+}
+.att-present { background:#dcfce7; color:#15803d; }
+.att-absent { background:#fee2e2; color:var(--danger); }
+.att-late { background:var(--yellow-light); color:#92400e; }
+.att-none { background:var(--bg); color:var(--text-muted); }
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:768px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.mobile-open { transform:translateX(0); }
+  .main-wrapper { margin-left:0 !important; }
+  .form-row { grid-template-columns:1fr; }
+  .topbar { padding:0 16px; }
+  .page-content { padding:16px; }
+  table { font-size:13px; }
+  th, td { padding:10px 14px; }
+}
+
+/* hide pages */
+.page { display:none; }
+.page.active { display:block; }
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">S</div>
+    <span class="logo-text">SchooLama</span>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav"></nav>
+  <div class="sidebar-footer">
+    <div class="user-avatar" id="sb-avatar">A</div>
+    <div class="user-info">
+      <div class="user-name" id="sb-name">Admin User</div>
+      <div class="user-role" id="sb-role">Administrator</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════════ -->
+<div class="main-wrapper" id="main-wrapper">
+  <header class="topbar">
+    <button class="topbar-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" placeholder="Search…" id="global-search">
+    </div>
+    <div class="topbar-actions">
+      <div class="topbar-btn" title="Notifications">🔔<span class="badge"></span></div>
+      <div class="topbar-btn" title="Messages">✉️</div>
+      <div class="topbar-btn" onclick="doLogout()" title="Logout" style="cursor:pointer">🚪</div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <!-- All pages injected here -->
+    <div id="pages-container"></div>
+  </main>
+</div>
+
+<!-- ══ MODAL ══ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">Add Record</h3>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ══ TOASTS ══ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ══ CONFIG ═══════════════════════════════════════════════
+const SUPABASE_URL  = 'https://cllnpkysirxrjxwixqme.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloamNibGtpdXRybnN0b3hva2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MzQ5NjAsImV4cCI6MjA5NTAxMDk2MH0.wKXCGDwLHRDEP6su2Uft0xp8eEC32_WA0Ch32Ba4LhI'; // ← REPLACE with your real anon key from screenshot
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let currentUser = null;
+let currentPage = 'dashboard';
+let sidebarCollapsed = false;
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let chartInstances = {};
+
+// ══ AUTH CHECK ════════════════════════════════════════════
+(function(){
+  const saved = localStorage.getItem('school_user');
+  if (!saved) { window.location.href='index.html'; return; }
+  currentUser = JSON.parse(saved);
+  document.getElementById('sb-name').textContent = currentUser.name || currentUser.username;
+  document.getElementById('sb-role').textContent = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
+  document.getElementById('sb-avatar').textContent = (currentUser.name||currentUser.username||'A')[0].toUpperCase();
+})();
+
+function doLogout(){
+  localStorage.removeItem('school_user');
+  window.location.href='index.html';
+}
+
+// ══ NAV CONFIG ════════════════════════════════════════════
+const NAV = [
+  { section:'MENU' },
+  { id:'dashboard',   icon:'🏠', label:'Dashboard' },
+  { section:'MANAGEMENT' },
+  { id:'teachers',    icon:'👨‍🏫', label:'Teachers' },
+  { id:'students',    icon:'🎓', label:'Students' },
+  { id:'parents',     icon:'👨‍👩‍👧', label:'Parents' },
+  { id:'subjects',    icon:'📚', label:'Subjects' },
+  { id:'classes',     icon:'🏫', label:'Classes' },
+  { id:'lessons',     icon:'📖', label:'Lessons' },
+  { section:'ACADEMICS' },
+  { id:'exams',       icon:'📝', label:'Exams' },
+  { id:'assignments', icon:'📋', label:'Assignments' },
+  { id:'results',     icon:'📊', label:'Results' },
+  { id:'attendance',  icon:'✅', label:'Attendance' },
+  { section:'EVENTS' },
+  { id:'events',      icon:'📅', label:'Events' },
+  { id:'announcements',icon:'📢', label:'Announcements' },
+];
+
+// ══ BUILD SIDEBAR ═════════════════════════════════════════
+function buildSidebar(){
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+  NAV.forEach(item => {
+    if (item.section) {
+      nav.innerHTML += `<div class="nav-section-label">${item.section}</div>`;
+    } else {
+      nav.innerHTML += `
+        <a class="nav-item${item.id===currentPage?' active':''}" onclick="navigate('${item.id}')">
+          <span class="nav-icon">${item.icon}</span>
+          <span class="nav-label">${item.label}</span>
+        </a>`;
+    }
+  });
+}
+
+function toggleSidebar(){
+  sidebarCollapsed = !sidebarCollapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed);
+  document.getElementById('main-wrapper').classList.toggle('collapsed', sidebarCollapsed);
+}
+
+// ══ ROUTER ════════════════════════════════════════════════
+function navigate(page){
+  currentPage = page;
+  buildSidebar();
+  renderPage(page);
+  window.scrollTo(0,0);
+}
+
+function renderPage(page){
+  const container = document.getElementById('pages-container');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  switch(page){
+    case 'dashboard':    renderDashboard(); break;
+    case 'teachers':     renderList('Teacher','Teachers',['name','email','phone','subjects','classes','address']); break;
+    case 'students':     renderList('Student','Students',['name','email','phone','classId','address','bloodType']); break;
+    case 'parents':      renderList('Parent','Parents',['name','email','phone','address']); break;
+    case 'subjects':     renderList('Subject','Subjects',['name','teachers']); break;
+    case 'classes':      renderList('Class','Classes',['name','capacity','grade','supervisor']); break;
+    case 'lessons':      renderList('Lesson','Lessons',['name','day','startTime','endTime','subject','class','teacher']); break;
+    case 'exams':        renderList('Exam','Exams',['title','startTime','endTime','lesson']); break;
+    case 'assignments':  renderList('Assignment','Assignments',['title','startDate','dueDate','lesson']); break;
+    case 'results':      renderList('Result','Results',['score','studentId','assignmentId']); break;
+    case 'attendance':   renderList('Attendance','Attendance',['date','present','studentId','lessonId']); break;
+    case 'events':       renderEventsPage(); break;
+    case 'announcements':renderAnnouncementsPage(); break;
+  }
+}
+
+// ══ TOAST ══════════════════════════════════════════════════
+function toast(msg, type='info'){
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  const icons = {success:'✅',error:'❌',info:'ℹ️'};
+  t.innerHTML = `<span>${icons[type]||'ℹ️'}</span>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+// ══ MODAL ══════════════════════════════════════════════════
+function openModal(title, bodyHTML){
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e){ if(e.target===document.getElementById('modal-overlay')) closeModalDirect(); }
+function closeModalDirect(){ document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ══ HELPERS ═══════════════════════════════════════════════
+function initials(name){
+  if(!name) return '?';
+  return name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+}
+function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtTime(d){ if(!d) return '—'; return new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+const COLORS = ['#C3EBFA','#CFCEFF','#FAE27C','#bbf7d0','#fecaca','#e9d5ff'];
+
+// ══ DASHBOARD ══════════════════════════════════════════════
+async function renderDashboard(){
+  const c = document.getElementById('pages-container');
+
+  // Fetch counts in parallel
+  const [
+    {count: teacherCount},
+    {count: studentCount},
+    {count: parentCount},
+    {count: subjectCount},
+    {data: events},
+    {data: announcements},
+  ] = await Promise.all([
+    sb.from('Teacher').select('*',{count:'exact',head:true}),
+    sb.from('Student').select('*',{count:'exact',head:true}),
+    sb.from('Parent').select('*',{count:'exact',head:true}),
+    sb.from('Subject').select('*',{count:'exact',head:true}),
+    sb.from('Event').select('*').order('startTime',{ascending:true}).limit(5),
+    sb.from('Announcement').select('*').order('date',{ascending:false}).limit(5),
+  ]);
+
+  // Attendance data for chart
+  const today = new Date();
+  const last6 = Array.from({length:6},(_,i)=>{
+    const d = new Date(today); d.setMonth(d.getMonth()-5+i);
+    return d.toLocaleString('default',{month:'short'});
+  });
+
+  c.innerHTML = `
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-sky">👨‍🏫</div>
+        <span class="stat-more" onclick="navigate('teachers')" style="cursor:pointer">See all →</span>
+      </div>
+      <div class="stat-value">${teacherCount||0}</div>
+      <div class="stat-label">Teachers</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-purple">🎓</div>
+        <span class="stat-more" onclick="navigate('students')" style="cursor:pointer">See all →</span>
+      </div>
+      <div class="stat-value">${studentCount||0}</div>
+      <div class="stat-label">Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-yellow">👨‍👩‍👧</div>
+        <span class="stat-more" onclick="navigate('parents')" style="cursor:pointer">See all →</span>
+      </div>
+      <div class="stat-value">${parentCount||0}</div>
+      <div class="stat-label">Parents</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-sky">📚</div>
+        <span class="stat-more" onclick="navigate('subjects')" style="cursor:pointer">See all →</span>
+      </div>
+      <div class="stat-value">${subjectCount||0}</div>
+      <div class="stat-label">Subjects</div>
+    </div>
+  </div>
+
+  <!-- Charts + Calendar row -->
+  <div class="dash-grid">
+    <!-- Attendance Chart (colspan 2) -->
+    <div class="dash-card" style="grid-column:span 2">
+      <div class="dash-card-title">Attendance Overview</div>
+      <div class="chart-wrap"><canvas id="att-chart"></canvas></div>
+    </div>
+    <!-- Mini Calendar -->
+    <div class="dash-card">
+      <div class="dash-card-title">Calendar</div>
+      <div class="calendar-wrap" id="mini-cal"></div>
+    </div>
+  </div>
+
+  <div style="height:20px"></div>
+
+  <!-- Finance + Events + Announcements -->
+  <div class="dash-grid">
+    <!-- Finance chart -->
+    <div class="dash-card">
+      <div class="dash-card-title">Finance Overview</div>
+      <div class="chart-wrap"><canvas id="fin-chart"></canvas></div>
+    </div>
+    <!-- Events -->
+    <div class="dash-card">
+      <div class="dash-card-title" style="display:flex;justify-content:space-between;align-items:center">
+        Events
+        <span onclick="navigate('events')" style="font-size:12px;color:var(--primary);cursor:pointer">View all</span>
+      </div>
+      <div class="event-list" id="dash-events"></div>
+    </div>
+    <!-- Announcements -->
+    <div class="dash-card">
+      <div class="dash-card-title" style="display:flex;justify-content:space-between;align-items:center">
+        Announcements
+        <span onclick="navigate('announcements')" style="font-size:12px;color:var(--primary);cursor:pointer">View all</span>
+      </div>
+      <div id="dash-ann"></div>
+    </div>
+  </div>`;
+
+  // Build calendar
+  buildMiniCal();
+
+  // Attendance Chart
+  const attCtx = document.getElementById('att-chart').getContext('2d');
+  if(chartInstances['att']) chartInstances['att'].destroy();
+  chartInstances['att'] = new Chart(attCtx, {
+    type: 'bar',
+    data: {
+      labels: last6,
+      datasets: [
+        { label:'Present', data: last6.map(()=>Math.floor(60+Math.random()*30)), backgroundColor:'#C3EBFA', borderRadius:6 },
+        { label:'Absent',  data: last6.map(()=>Math.floor(5+Math.random()*20)),  backgroundColor:'#CFCEFF', borderRadius:6 },
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}},
+      scales:{y:{beginAtZero:true},x:{grid:{display:false}}} }
+  });
+
+  // Finance Chart
+  const finCtx = document.getElementById('fin-chart').getContext('2d');
+  if(chartInstances['fin']) chartInstances['fin'].destroy();
+  chartInstances['fin'] = new Chart(finCtx, {
+    type: 'line',
+    data: {
+      labels: last6,
+      datasets: [
+        { label:'Income',  data: last6.map(()=>Math.floor(2000+Math.random()*5000)), borderColor:'#4361EE', backgroundColor:'rgba(67,97,238,.08)', fill:true, tension:.4 },
+        { label:'Expense', data: last6.map(()=>Math.floor(1000+Math.random()*3000)), borderColor:'#FAE27C', backgroundColor:'rgba(250,226,124,.1)', fill:true, tension:.4 },
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}},
+      scales:{y:{beginAtZero:true},x:{grid:{display:false}}} }
+  });
+
+  // Events
+  const evEl = document.getElementById('dash-events');
+  if(!events?.length){
+    evEl.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:20px 0">No upcoming events</div>';
+  } else {
+    evEl.innerHTML = events.slice(0,4).map((e,i)=>`
+      <div class="event-item">
+        <div class="event-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+        <div class="event-info">
+          <div class="event-title">${e.title}</div>
+          <div class="event-meta">${fmtDate(e.startTime)} ${e.class?'· Class '+e.class:''}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Announcements
+  const annEl = document.getElementById('dash-ann');
+  if(!announcements?.length){
+    annEl.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:20px 0">No announcements</div>';
+  } else {
+    annEl.innerHTML = announcements.slice(0,4).map(a=>`
+      <div class="announcement-item">
+        <div class="ann-header">
+          <span class="ann-title">${a.title}</span>
+          <span class="ann-date">${fmtDate(a.date)}</span>
+        </div>
+        <div class="ann-body">${a.description||''}</div>
+      </div>`).join('');
+  }
+}
+
+// ══ MINI CALENDAR ══════════════════════════════════════════
+function buildMiniCal(){
+  const el = document.getElementById('mini-cal');
+  if(!el) return;
+  const now = new Date();
+  const first = new Date(calYear, calMonth, 1);
+  const last  = new Date(calYear, calMonth+1, 0);
+  const startDay = first.getDay(); // 0=Sun
+  const monthName = first.toLocaleString('default',{month:'long'});
+
+  let html = `
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+      <span class="cal-title">${monthName} ${calYear}</span>
+      <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-grid">
+      ${['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-day-name">${d}</div>`).join('')}`;
+
+  // blank slots
+  for(let i=0;i<startDay;i++) html+=`<div class="cal-day other-month"></div>`;
+  for(let d=1;d<=last.getDate();d++){
+    const isToday = d===now.getDate()&&calMonth===now.getMonth()&&calYear===now.getFullYear();
+    html+=`<div class="cal-day${isToday?' today':''}">${d}</div>`;
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+function calNav(dir){
+  calMonth+=dir;
+  if(calMonth<0){calMonth=11;calYear--;}
+  if(calMonth>11){calMonth=0;calYear++;}
+  buildMiniCal();
+}
+
+// ══ GENERIC LIST PAGE ══════════════════════════════════════
+let listPage = 1;
+const PAGE_SIZE = 10;
+let listData = [];
+let listFilter = '';
+
+async function renderList(table, title, columns){
+  const c = document.getElementById('pages-container');
+  c.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">${title}</div>
+        <div class="page-subtitle">Manage all ${title.toLowerCase()}</div>
+      </div>
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('${table}')">+ Add ${table}</button>`:''}
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">All ${title}</span>
+        <div class="table-tools">
+          <div class="table-search">
+            <span>🔍</span>
+            <input type="text" placeholder="Search ${title.toLowerCase()}…" id="list-search" oninput="filterList(this.value,'${table}','${title}')">
+          </div>
+        </div>
+      </div>
+      <div id="list-body">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>`;
+
+  listPage = 1; listFilter = '';
+  await fetchAndRenderTable(table, title);
+}
+
+async function fetchAndRenderTable(table, title){
+  const from = (listPage-1)*PAGE_SIZE;
+  let query = sb.from(table).select('*',{count:'exact'}).range(from, from+PAGE_SIZE-1);
+  if(listFilter) {
+    // name-based search for most tables
+    query = query.ilike('name', `%${listFilter}%`);
+  }
+  const {data, count, error} = await query;
+
+  const body = document.getElementById('list-body');
+  if(error){
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error: ${error.message}</p></div>`;
+    return;
+  }
+  if(!data?.length){
+    body.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No records found</p></div>`;
+    return;
+  }
+
+  const cols = Object.keys(data[0]).filter(k=>!['id','createdAt','updatedAt','img'].includes(k)).slice(0,6);
+  body.innerHTML = `
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        ${['Info',...cols.slice(1),'Actions'].map(h=>`<th>${h}</th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${data.map(row=>`
+          <tr>
+            <td>
+              <div class="cell-user">
+                <div class="avatar">${initials(row.name||row.title||row.username||String(row.id))}</div>
+                <div class="cell-user-info">
+                  <div class="name">${row.name||row.title||row.username||'—'}</div>
+                  <div class="sub">${row.email||row.description||''}</div>
+                </div>
+              </div>
+            </td>
+            ${cols.slice(1).map(k=>`<td>${formatCell(row[k])}</td>`).join('')}
+            <td>
+              <div class="action-btns">
+                <button class="icon-btn icon-btn-view" onclick="viewRecord('${table}',${row.id})" title="View">👁</button>
+                ${currentUser.role==='admin'?`
+                  <button class="icon-btn icon-btn-edit" onclick="editRecord('${table}',${row.id})" title="Edit">✏️</button>
+                  <button class="icon-btn icon-btn-del"  onclick="deleteRecord('${table}',${row.id})" title="Delete">🗑</button>
+                `:''}
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div class="pagination">
+      <span>Showing ${from+1}–${Math.min(from+PAGE_SIZE, count)} of ${count}</span>
+      <div class="page-btns">
+        ${listPage>1?`<button class="page-btn" onclick="goPage(${listPage-1},'${table}','${title}')">‹</button>`:''}
+        ${Array.from({length:Math.ceil(count/PAGE_SIZE)},(_,i)=>i+1).slice(Math.max(0,listPage-3),listPage+2).map(p=>`
+          <button class="page-btn${p===listPage?' active':''}" onclick="goPage(${p},'${table}','${title}')">${p}</button>`).join('')}
+        ${listPage<Math.ceil(count/PAGE_SIZE)?`<button class="page-btn" onclick="goPage(${listPage+1},'${table}','${title}')">›</button>`:''}
+      </div>
+    </div>`;
+}
+
+function formatCell(val){
+  if(val===null||val===undefined) return '—';
+  if(typeof val==='boolean') return val?'<span class="badge-pill badge-green">Yes</span>':'<span class="badge-pill badge-red">No</span>';
+  if(typeof val==='string' && val.match(/^\d{4}-\d{2}-\d{2}/)) return fmtDate(val);
+  if(typeof val==='string' && val.length>40) return val.slice(0,40)+'…';
+  return val;
+}
+
+function filterList(val, table, title){
+  listFilter = val; listPage = 1;
+  fetchAndRenderTable(table, title);
+}
+function goPage(p, table, title){ listPage=p; fetchAndRenderTable(table,title); }
+
+// ══ VIEW RECORD ════════════════════════════════════════════
+async function viewRecord(table, id){
+  const {data,error} = await sb.from(table).select('*').eq('id',id).single();
+  if(error){ toast('Failed to load record','error'); return; }
+  const rows = Object.entries(data).map(([k,v])=>`
+    <div class="info-item">
+      <div class="label">${k}</div>
+      <div class="value">${formatCell(v)}</div>
+    </div>`).join('');
+  openModal(`${table} Details`, `
+    <div class="profile-card" style="margin-bottom:20px">
+      <div class="profile-avatar-big">${initials(data.name||data.title||String(id))}</div>
+      <div class="profile-info">
+        <h2>${data.name||data.title||data.username||'Record #'+id}</h2>
+        ${data.email?`<div style="color:var(--text-muted);font-size:14px">${data.email}</div>`:''}
+      </div>
+    </div>
+    <div class="info-grid">${rows}</div>`);
+}
+
+// ══ ADD RECORD ════════════════════════════════════════════
+async function openAddModal(table){
+  const fields = getTableFields(table);
+  openModal(`Add ${table}`, buildForm(fields,'add',table));
+}
+
+// ══ EDIT RECORD ═══════════════════════════════════════════
+async function editRecord(table, id){
+  const {data,error} = await sb.from(table).select('*').eq('id',id).single();
+  if(error){ toast('Failed to load','error'); return; }
+  const fields = getTableFields(table);
+  openModal(`Edit ${table}`, buildForm(fields,'edit',table,id,data));
+}
+
+// ══ DELETE RECORD ═════════════════════════════════════════
+async function deleteRecord(table, id){
+  if(!confirm('Delete this record?')) return;
+  const {error} = await sb.from(table).delete().eq('id',id);
+  if(error){ toast(error.message,'error'); return; }
+  toast('Deleted successfully','success');
+  navigate(currentPage);
+}
+
+// ══ TABLE FIELD DEFINITIONS ════════════════════════════════
+function getTableFields(table){
+  const FIELDS = {
+    Teacher:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
+    Student:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
+    Parent:      [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'}],
+    Subject:     [{n:'name',l:'Subject Name',t:'text',req:true}],
+    Class:       [{n:'name',l:'Class Name',t:'text',req:true},{n:'capacity',l:'Capacity',t:'number'},{n:'gradeId',l:'Grade ID',t:'number'}],
+    Lesson:      [{n:'name',l:'Lesson Name',t:'text',req:true},{n:'day',l:'Day',t:'select',opts:['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
+    Exam:        [{n:'title',l:'Title',t:'text',req:true},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
+    Assignment:  [{n:'title',l:'Title',t:'text',req:true},{n:'startDate',l:'Start Date',t:'date'},{n:'dueDate',l:'Due Date',t:'date'}],
+    Result:      [{n:'score',l:'Score',t:'number',req:true}],
+    Attendance:  [{n:'date',l:'Date',t:'date',req:true},{n:'present',l:'Present',t:'select',opts:['true','false']}],
+    Event:       [{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
+    Announcement:[{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'date',l:'Date',t:'date'}],
+  };
+  return FIELDS[table]||[{n:'name',l:'Name',t:'text',req:true}];
+}
+
+function buildForm(fields, mode, table, id='', data={}){
+  let pairs = [];
+  for(let i=0;i<fields.length;i+=2){
+    const f1=fields[i], f2=fields[i+1];
+    pairs.push(`<div class="form-row">
+      ${fieldHTML(f1,data)} ${f2?fieldHTML(f2,data):'<div></div>'}
+    </div>`);
+  }
+  return `<form onsubmit="saveRecord(event,'${table}','${mode}',${id})">
+    ${pairs.join('')}
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeModalDirect()">Cancel</button>
+      <button type="submit" class="btn btn-primary">${mode==='add'?'Create':'Update'}</button>
+    </div>
+  </form>`;
+}
+
+function fieldHTML(f, data){
+  const val = data[f.n]||'';
+  if(f.t==='select') return `
+    <div class="form-group">
+      <label>${f.l}${f.req?' *':''}</label>
+      <select name="${f.n}"${f.req?' required':''}>
+        <option value="">Select…</option>
+        ${f.opts.map(o=>`<option value="${o}"${val==o?' selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>`;
+  if(f.t==='textarea') return `
+    <div class="form-group">
+      <label>${f.l}</label>
+      <textarea name="${f.n}">${val}</textarea>
+    </div>`;
+  return `
+    <div class="form-group">
+      <label>${f.l}${f.req?' *':''}</label>
+      <input type="${f.t}" name="${f.n}" value="${val}"${f.req?' required':''}>
+    </div>`;
+}
+
+async function saveRecord(e, table, mode, id){
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+  const payload = {};
+  formData.forEach((v,k)=>{ if(v) payload[k]=v; });
+
+  let error;
+  if(mode==='add'){
+    ({error} = await sb.from(table).insert(payload));
+  } else {
+    ({error} = await sb.from(table).update(payload).eq('id',id));
+  }
+  if(error){ toast(error.message,'error'); return; }
+  toast(mode==='add'?'Created successfully!':'Updated successfully!','success');
+  closeModalDirect();
+  navigate(currentPage);
+}
+
+// ══ EVENTS PAGE ════════════════════════════════════════════
+async function renderEventsPage(){
+  const c = document.getElementById('pages-container');
+  const {data:events, error} = await sb.from('Event').select('*').order('startTime',{ascending:true});
+
+  c.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Events</div>
+        <div class="page-subtitle">School calendar & events</div>
+      </div>
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('Event')">+ Add Event</button>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+      <!-- Full Calendar -->
+      <div class="table-card" style="padding:24px">
+        <div class="cal-header" style="margin-bottom:16px">
+          <button class="cal-nav-btn" onclick="evtCalNav(-1)">‹</button>
+          <span class="cal-title" id="evt-cal-title"></span>
+          <button class="cal-nav-btn" onclick="evtCalNav(1)">›</button>
+        </div>
+        <div class="cal-grid" id="evt-cal-grid"></div>
+      </div>
+      <!-- Event List -->
+      <div class="table-card" style="padding:20px">
+        <div class="dash-card-title" style="margin-bottom:14px">Upcoming Events</div>
+        <div id="evt-list"></div>
+      </div>
+    </div>`;
+
+  renderEvtCal(events||[]);
+  renderEvtList(events||[]);
+}
+
+function renderEvtCal(events){
+  const first = new Date(calYear, calMonth, 1);
+  const last  = new Date(calYear, calMonth+1, 0);
+  const startDay = first.getDay();
+  document.getElementById('evt-cal-title').textContent =
+    first.toLocaleString('default',{month:'long'})+' '+calYear;
+
+  const evDays = new Set((events||[]).map(e=>new Date(e.startTime).getDate()));
+
+  let html = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  for(let i=0;i<startDay;i++) html+=`<div class="cal-day other-month"></div>`;
+  const now = new Date();
+  for(let d=1;d<=last.getDate();d++){
+    const isToday = d===now.getDate()&&calMonth===now.getMonth()&&calYear===now.getFullYear();
+    const hasEv = evDays.has(d);
+    html+=`<div class="cal-day${isToday?' today':''}${hasEv?' has-event':''}">${d}</div>`;
+  }
+  document.getElementById('evt-cal-grid').innerHTML=html;
+}
+
+function renderEvtList(events){
+  const el = document.getElementById('evt-list');
+  if(!events.length){
+    el.innerHTML='<div style="color:var(--text-muted);font-size:13px">No events found</div>'; return;
+  }
+  el.innerHTML=events.slice(0,8).map((e,i)=>`
+    <div class="event-item" style="margin-bottom:8px">
+      <div class="event-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+      <div class="event-info" style="flex:1">
+        <div class="event-title">${e.title}</div>
+        <div class="event-meta">${fmtDate(e.startTime)}</div>
+      </div>
+      ${currentUser.role==='admin'?`
+        <button class="icon-btn icon-btn-del" onclick="deleteRecord('Event',${e.id})" style="margin-left:auto">🗑</button>
+      `:''}
+    </div>`).join('');
+}
+
+function evtCalNav(dir){
+  calMonth+=dir;
+  if(calMonth<0){calMonth=11;calYear--;}
+  if(calMonth>11){calMonth=0;calYear++;}
+  // re-fetch
+  sb.from('Event').select('*').then(({data})=>renderEvtCal(data||[]));
+}
+
+// ══ ANNOUNCEMENTS PAGE ════════════════════════════════════
+async function renderAnnouncementsPage(){
+  const c = document.getElementById('pages-container');
+  const {data, error} = await sb.from('Announcement').select('*').order('date',{ascending:false});
+
+  c.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Announcements</div>
+        <div class="page-subtitle">School-wide communications</div>
+      </div>
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('Announcement')">+ Add Announcement</button>`:''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px" id="ann-list"></div>`;
+
+  const el = document.getElementById('ann-list');
+  if(!data?.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📢</div><p>No announcements yet</p></div>'; return;
+  }
+  el.innerHTML=data.map((a,i)=>`
+    <div class="dash-card" style="border-left:4px solid ${COLORS[i%COLORS.length]}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:6px">${a.title}</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6">${a.description||''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
+          <span style="font-size:12px;color:var(--text-muted)">${fmtDate(a.date)}</span>
+          ${currentUser.role==='admin'?`
+            <div class="action-btns">
+              <button class="icon-btn icon-btn-edit" onclick="editRecord('Announcement',${a.id})">✏️</button>
+              <button class="icon-btn icon-btn-del"  onclick="deleteRecord('Announcement',${a.id})">🗑</button>
+            </div>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ══ GLOBAL SEARCH ══════════════════════════════════════════
+document.getElementById('global-search').addEventListener('keydown', async e=>{
+  if(e.key!=='Enter') return;
+  const q = e.target.value.trim();
+  if(!q) return;
+  const c = document.getElementById('pages-container');
+  c.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  const [t,s,p] = await Promise.all([
+    sb.from('Teacher').select('id,name,email').ilike('name',`%${q}%`).limit(5),
+    sb.from('Student').select('id,name,email').ilike('name',`%${q}%`).limit(5),
+    sb.from('Parent').select('id,name,email').ilike('name',`%${q}%`).limit(5),
+  ]);
+  const groups = [
+    {label:'Teachers',data:t.data,table:'Teacher'},
+    {label:'Students',data:s.data,table:'Student'},
+    {label:'Parents',data:p.data,table:'Parent'},
+  ].filter(g=>g.data?.length);
+
+  currentPage='search';
+  buildSidebar();
+  c.innerHTML=`
+    <div class="page-header"><div class="page-title">Search: "${q}"</div></div>
+    ${groups.length===0?'<div class="empty-state"><div class="empty-icon">🔍</div><p>No results found</p></div>':
+      groups.map(g=>`
+        <div style="margin-bottom:20px">
+          <div style="font-weight:600;margin-bottom:10px">${g.label}</div>
+          <div class="table-card">
+            <table><tbody>
+              ${g.data.map(r=>`
+                <tr>
+                  <td><div class="cell-user">
+                    <div class="avatar">${initials(r.name)}</div>
+                    <div class="cell-user-info">
+                      <div class="name">${r.name}</div>
+                      <div class="sub">${r.email||''}</div>
+                    </div>
+                  </div></td>
+                  <td><button class="btn btn-sm btn-ghost" onclick="viewRecord('${g.table}',${r.id})">View</button></td>
+                </tr>`).join('')}
+            </tbody></table>
+          </div>
+        </div>`).join('')}`;
+});
+
+// ══ INIT ══════════════════════════════════════════════════
+buildSidebar();
+renderPage('dashboard');
+</script>
+</body>
+</html>
