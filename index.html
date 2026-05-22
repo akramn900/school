@@ -6,6 +6,16 @@
 <title>SchooLama – Login</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+<!-- ✅ CLERK: Replace YOUR_PUBLISHABLE_KEY below with your actual key from the screenshot -->
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_Y_RzLmR1diQ"
+  src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
+
 <style>
 :root {
   --sky:#C3EBFA; --sky-light:#EDF9FD; --purple:#CFCEFF; --purple-light:#F1F0FF;
@@ -15,40 +25,58 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
   background-image:radial-gradient(circle at 20% 20%,rgba(195,235,250,.4) 0%,transparent 50%),
-                   radial-gradient(circle at 80% 80%,rgba(207,206,255,.4) 0%,transparent 50%);}
-.card{background:var(--white);border-radius:20px;padding:40px;width:100%;max-width:420px;
+  radial-gradient(circle at 80% 80%,rgba(207,206,255,.4) 0%,transparent 50%);}
+
+.card{background:var(--white);border-radius:20px;padding:40px;width:100%;max-width:460px;
   margin:24px;box-shadow:0 4px 32px rgba(0,0,0,.09);border:1px solid var(--border);}
+
 .logo{text-align:center;margin-bottom:28px;}
 .logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;}
 .logo-icon{width:40px;height:40px;background:var(--primary);border-radius:10px;
   display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;}
 .logo-text{font-family:'Playfair Display',serif;font-size:26px;color:var(--text);}
 .logo p{color:var(--text-muted);font-size:14px;}
+
+/* Role Selector */
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
   background:var(--bg);padding:4px;border-radius:10px;margin-bottom:22px;}
 .tab{padding:8px 4px;border:none;background:transparent;border-radius:8px;
   font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
   color:var(--text-muted);cursor:pointer;transition:all .2s;}
 .tab.active{background:var(--white);color:var(--primary);box-shadow:0 1px 8px rgba(0,0,0,.1);}
-.fg{margin-bottom:16px;}
-label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px;}
-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
-  font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;}
-input:focus{border-color:var(--primary);}
-.btn{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;
-  border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;
-  cursor:pointer;transition:background .2s;}
+
+/* Clerk sign-in container */
+#clerk-sign-in{min-height:300px;display:flex;align-items:center;justify-content:center;}
+
+/* Loading state */
+.loading-msg{text-align:center;color:var(--text-muted);font-size:14px;padding:40px 0;}
+.loading-msg .spinner{width:32px;height:32px;border:3px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Signed-in redirect state */
+.redirect-card{text-align:center;padding:20px 0;}
+.redirect-card h3{font-size:18px;color:var(--text);margin-bottom:8px;}
+.redirect-card p{color:var(--text-muted);font-size:14px;margin-bottom:20px;}
+.btn{display:inline-block;padding:11px 28px;background:var(--primary);color:#fff;border:none;
+  border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;text-decoration:none;transition:background .2s;}
 .btn:hover{background:var(--primary-dark);}
-.btn:disabled{opacity:.6;cursor:not-allowed;}
-.err{color:var(--danger);font-size:13px;margin-top:10px;text-align:center;display:none;}
-.hint{text-align:center;margin-top:16px;font-size:13px;color:var(--text-muted);}
-.hint strong{color:var(--text);}
-.debug{font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;word-break:break-all;}
+
+/* Role badge */
+.role-saved-badge{display:inline-flex;align-items:center;gap:6px;
+  background:var(--purple-light);color:var(--primary);border-radius:8px;
+  padding:5px 12px;font-size:13px;font-weight:500;margin-bottom:16px;}
+
+.info-box{background:var(--sky-light);border:1px solid var(--sky);border-radius:10px;
+  padding:12px 14px;font-size:12.5px;color:#0369a1;margin-top:16px;line-height:1.6;}
+.info-box strong{font-weight:600;}
 </style>
 </head>
 <body>
+
 <div class="card">
   <div class="logo">
     <div class="logo-row">
@@ -58,119 +86,96 @@ input:focus{border-color:var(--primary);}
     <p>Sign in to your account</p>
   </div>
 
-  <div class="tabs">
+  <!-- Role selector (saved to localStorage so dashboard knows the role) -->
+  <div class="tabs" id="role-tabs">
     <button class="tab active" data-role="admin"   onclick="setRole('admin')">Admin</button>
     <button class="tab"        data-role="teacher" onclick="setRole('teacher')">Teacher</button>
     <button class="tab"        data-role="student" onclick="setRole('student')">Student</button>
     <button class="tab"        data-role="parent"  onclick="setRole('parent')">Parent</button>
   </div>
 
-  <div class="fg">
-    <label for="un">Username</label>
-    <input id="un" placeholder="Enter username" autofocus>
+  <!-- Clerk renders its sign-in UI here -->
+  <div id="clerk-sign-in">
+    <div class="loading-msg">
+      <div class="spinner"></div>
+      Loading secure sign-in…
+    </div>
   </div>
-  <div class="fg">
-    <label for="pw">Password</label>
-    <input id="pw" type="password" placeholder="Enter password">
-  </div>
-
-  <button class="btn" id="login-btn" onclick="doLogin()">Sign In</button>
-  <p class="err" id="err"></p>
-  <p class="hint">Admin login: <strong>admin / admin123</strong></p>
-  <p class="debug" id="debug"></p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script>
-// ── CONFIG ────────────────────────────────────────────
-const SUPABASE_URL  = 'https://ihjcblkiutrnstoxokcv.supabase.co';
-// Paste the FULL anon key from your Supabase Settings → API Keys page:
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloamNibGtpdXRybnN0b3hva2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MzQ5NjAsImV4cCI6MjA5NTAxMDk2MH0.wKXCGDwLHRDEP6su2Uft0xp8eEC32_WA0Ch32Ba4LhI';
+<div class="info-box" style="max-width:460px;margin:0 24px 24px;">
+  <strong>🔐 Secure login powered by Clerk.</strong><br>
+  Select your role above, then sign in with email/password, Google, or magic link.<br>
+  Your role is remembered and used to redirect you to the right dashboard.
+</div>
 
-// ── PATH: works for both root and /school/ subdirectory ──
+<script>
+// ─── ROLE SELECTION ────────────────────────────────────────────────
+let selectedRole = localStorage.getItem('school_pending_role') || 'admin';
+document.querySelectorAll('.tab').forEach(t => {
+  t.classList.toggle('active', t.dataset.role === selectedRole);
+});
+
+function setRole(r) {
+  selectedRole = r;
+  localStorage.setItem('school_pending_role', r);
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.role === r));
+}
+
+// ─── PATH HELPER ───────────────────────────────────────────────────
 function dashboardPath() {
-  const path = window.location.pathname;           // e.g. /school/index.html or /index.html
-  const dir  = path.substring(0, path.lastIndexOf('/') + 1); // e.g. /school/ or /
+  const path = window.location.pathname;
+  const dir = path.substring(0, path.lastIndexOf('/') + 1);
   return dir + 'dashboard.html';
 }
 
-// ── AUTH STATE ────────────────────────────────────────
-const saved = localStorage.getItem('school_user');
-if (saved) {
-  try { JSON.parse(saved); window.location.href = dashboardPath(); } catch(e) { localStorage.removeItem('school_user'); }
-}
+// ─── CLERK INIT ────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  await Clerk.load();
 
-let role = 'admin';
-function setRole(r) {
-  role = r;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.role === r));
-}
-
-// ── LOGIN ─────────────────────────────────────────────
-async function doLogin() {
-  const username = document.getElementById('un').value.trim();
-  const password = document.getElementById('pw').value.trim();
-  const btn = document.getElementById('login-btn');
-  const err = document.getElementById('err');
-  const dbg = document.getElementById('debug');
-
-  err.style.display = 'none'; dbg.textContent = '';
-
-  if (!username || !password) {
-    showErr('Please enter username and password'); return;
-  }
-
-  btn.disabled = true; btn.textContent = 'Signing in…';
-
-  // ── Admin: hardcoded (no DB needed) ─────────────────
-  if (role === 'admin' && username === 'admin' && password === 'admin123') {
-    save({ username, role: 'admin', name: 'Admin User' });
+  if (Clerk.user) {
+    // Already signed in → save user info and redirect
+    finishLogin(Clerk.user);
     return;
   }
 
-  // ── Other roles: look up in Supabase ────────────────
-  // If anon key is still placeholder, skip DB and use demo data
-  if (SUPABASE_ANON.includes('REPLACE_THIS')) {
-    dbg.textContent = '⚠️ Supabase key not set — only admin login works';
-    showErr('Only admin login available (Supabase key not configured)');
-    btn.disabled = false; btn.textContent = 'Sign In'; return;
-  }
+  // Mount Clerk's built-in SignIn UI
+  const container = document.getElementById('clerk-sign-in');
+  container.innerHTML = ''; // remove spinner
+  Clerk.mountSignIn(container, {
+    afterSignInUrl: window.location.href,  // reload this page; we'll catch it above
+    afterSignUpUrl: window.location.href,
+    appearance: {
+      variables: {
+        colorPrimary: '#4361EE',
+        borderRadius: '10px',
+        fontFamily: "'DM Sans', sans-serif",
+      }
+    }
+  });
 
-try {
-  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-  const tableMap = { teacher:'teachers', student:'students', parent:'parents' };
-  const table = tableMap[role];
-    const { data, error } = await client
-      .from(table)
-      .select('id, username, name, surname')
-      .eq('username', username)
-      .maybeSingle();
+  // Listen for sign-in completion
+  Clerk.addListener(({ user }) => {
+    if (user) finishLogin(user);
+  });
+});
 
-    if (error) throw new Error(error.message);
-    if (!data)  throw new Error('Username not found');
-
-    save({ ...data, role, name: data.name + ' ' + (data.surname||'') });
-  } catch(e) {
-    showErr(e.message);
-    btn.disabled = false; btn.textContent = 'Sign In';
-  }
-}
-
-function save(user) {
-  localStorage.setItem('school_user', JSON.stringify(user));
+function finishLogin(user) {
+  const role = selectedRole || localStorage.getItem('school_pending_role') || 'admin';
+  const school_user = {
+    id: user.id,
+    username: user.username || user.emailAddresses?.[0]?.emailAddress || user.id,
+    name: (user.firstName || '') + ' ' + (user.lastName || ''),
+    email: user.emailAddresses?.[0]?.emailAddress || '',
+    imageUrl: user.imageUrl || '',
+    role: role,
+    clerkId: user.id,
+  };
+  localStorage.setItem('school_user', JSON.stringify(school_user));
+  localStorage.removeItem('school_pending_role');
   window.location.href = dashboardPath();
 }
-
-function showErr(msg) {
-  const el = document.getElementById('err');
-  el.textContent = msg; el.style.display = 'block';
-  document.getElementById('login-btn').disabled = false;
-  document.getElementById('login-btn').textContent = 'Sign In';
-}
-
-document.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-}));
 </script>
 </body>
 </html>
