@@ -173,6 +173,7 @@ function finishLogin(user) {
     clerkId: user.id,
   };
   localStorage.setItem('school_user', JSON.stringify(school_user));
+  localStorage.setItem('school_token', `clerk-${user.id}`);
   localStorage.removeItem('school_pending_role');
   window.location.href = dashboardPath();
 }
