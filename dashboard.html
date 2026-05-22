@@ -593,17 +593,16 @@ function renderPage(page){
   const container = document.getElementById('pages-container');
   container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   switch(page){
-    case 'dashboard':    renderDashboard(); break;
-    case 'teachers':     renderList('Teacher','Teachers',['name','email','phone','subjects','classes','address']); break;
-    case 'students':     renderList('Student','Students',['name','email','phone','classId','address','bloodType']); break;
-    case 'parents':      renderList('Parent','Parents',['name','email','phone','address']); break;
-    case 'subjects':     renderList('Subject','Subjects',['name','teachers']); break;
-    case 'classes':      renderList('Class','Classes',['name','capacity','grade','supervisor']); break;
-    case 'lessons':      renderList('Lesson','Lessons',['name','day','startTime','endTime','subject','class','teacher']); break;
-    case 'exams':        renderList('Exam','Exams',['title','startTime','endTime','lesson']); break;
-    case 'assignments':  renderList('Assignment','Assignments',['title','startDate','dueDate','lesson']); break;
-    case 'results':      renderList('Result','Results',['score','studentId','assignmentId']); break;
-    case 'attendance':   renderList('Attendance','Attendance',['date','present','studentId','lessonId']); break;
+case 'teachers':     renderList('teachers','Teachers',...)
+case 'students':     renderList('students','Students',...)
+case 'parents':      renderList('parents','Parents',...)
+case 'subjects':     renderList('subjects','Subjects',...)
+case 'classes':      renderList('classes','Classes',...)
+case 'lessons':      renderList('lessons','Lessons',...)
+case 'exams':        renderList('exams','Exams',...)
+case 'assignments':  renderList('assignments','Assignments',...)
+case 'results':      renderList('results','Results',...)
+case 'attendance':   renderList('attendance','Attendance',...)
     case 'events':       renderEventsPage(); break;
     case 'announcements':renderAnnouncementsPage(); break;
   }
@@ -651,12 +650,12 @@ async function renderDashboard(){
     {data: events},
     {data: announcements},
   ] = await Promise.all([
-    sb.from('Teacher').select('*',{count:'exact',head:true}),
-    sb.from('Student').select('*',{count:'exact',head:true}),
-    sb.from('Parent').select('*',{count:'exact',head:true}),
-    sb.from('Subject').select('*',{count:'exact',head:true}),
-    sb.from('Event').select('*').order('startTime',{ascending:true}).limit(5),
-    sb.from('Announcement').select('*').order('date',{ascending:false}).limit(5),
+    sb.from('teachers').select('*',{count:'exact',head:true}),
+    sb.from('students').select('*',{count:'exact',head:true}),
+    sb.from('parents').select('*',{count:'exact',head:true}),
+    sb.from('subjects').select('*',{count:'exact',head:true}),
+    sb.from('events').select('*').order('startTime',{ascending:true}).limit(5),
+    sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
   ]);
 
   // Attendance data for chart
@@ -1003,18 +1002,18 @@ async function deleteRecord(table, id){
 // ══ TABLE FIELD DEFINITIONS ════════════════════════════════
 function getTableFields(table){
   const FIELDS = {
-    Teacher:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
-    Student:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
-    Parent:      [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'}],
-    Subject:     [{n:'name',l:'Subject Name',t:'text',req:true}],
-    Class:       [{n:'name',l:'Class Name',t:'text',req:true},{n:'capacity',l:'Capacity',t:'number'},{n:'gradeId',l:'Grade ID',t:'number'}],
-    Lesson:      [{n:'name',l:'Lesson Name',t:'text',req:true},{n:'day',l:'Day',t:'select',opts:['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
-    Exam:        [{n:'title',l:'Title',t:'text',req:true},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
-    Assignment:  [{n:'title',l:'Title',t:'text',req:true},{n:'startDate',l:'Start Date',t:'date'},{n:'dueDate',l:'Due Date',t:'date'}],
-    Result:      [{n:'score',l:'Score',t:'number',req:true}],
-    Attendance:  [{n:'date',l:'Date',t:'date',req:true},{n:'present',l:'Present',t:'select',opts:['true','false']}],
-    Event:       [{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
-    Announcement:[{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'date',l:'Date',t:'date'}],
+    teachers:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
+    students:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
+    parents:      [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'}],
+    subjects:     [{n:'name',l:'Subject Name',t:'text',req:true}],
+    classes:       [{n:'name',l:'Class Name',t:'text',req:true},{n:'capacity',l:'Capacity',t:'number'},{n:'gradeId',l:'Grade ID',t:'number'}],
+    lessons:      [{n:'name',l:'Lesson Name',t:'text',req:true},{n:'day',l:'Day',t:'select',opts:['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
+    exams:        [{n:'title',l:'Title',t:'text',req:true},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
+    assignments:  [{n:'title',l:'Title',t:'text',req:true},{n:'startDate',l:'Start Date',t:'date'},{n:'dueDate',l:'Due Date',t:'date'}],
+    results:      [{n:'score',l:'Score',t:'number',req:true}],
+    attendances:  [{n:'date',l:'Date',t:'date',req:true},{n:'present',l:'Present',t:'select',opts:['true','false']}],
+    events:       [{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
+    announcements:[{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'date',l:'Date',t:'date'}],
   };
   return FIELDS[table]||[{n:'name',l:'Name',t:'text',req:true}];
 }
@@ -1080,7 +1079,7 @@ async function saveRecord(e, table, mode, id){
 // ══ EVENTS PAGE ════════════════════════════════════════════
 async function renderEventsPage(){
   const c = document.getElementById('pages-container');
-  const {data:events, error} = await sb.from('Event').select('*').order('startTime',{ascending:true});
+  const {data:events, error} = await sb.from('events').select('*').order('startTime',{ascending:true});
 
   c.innerHTML = `
     <div class="page-header">
@@ -1088,7 +1087,7 @@ async function renderEventsPage(){
         <div class="page-title">Events</div>
         <div class="page-subtitle">School calendar & events</div>
       </div>
-      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('Event')">+ Add Event</button>`:''}
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('events')">+ Add Event</button>`:''}
     </div>
     <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
       <!-- Full Calendar -->
@@ -1144,7 +1143,7 @@ function renderEvtList(events){
         <div class="event-meta">${fmtDate(e.startTime)}</div>
       </div>
       ${currentUser.role==='admin'?`
-        <button class="icon-btn icon-btn-del" onclick="deleteRecord('Event',${e.id})" style="margin-left:auto">🗑</button>
+        <button class="icon-btn icon-btn-del" onclick="deleteRecord('events',${e.id})" style="margin-left:auto">🗑</button>
       `:''}
     </div>`).join('');
 }
@@ -1154,7 +1153,7 @@ function evtCalNav(dir){
   if(calMonth<0){calMonth=11;calYear--;}
   if(calMonth>11){calMonth=0;calYear++;}
   // re-fetch
-  sb.from('Event').select('*').then(({data})=>renderEvtCal(data||[]));
+  sb.from('events').select('*').then(({data})=>renderEvtCal(data||[]));
 }
 
 // ══ ANNOUNCEMENTS PAGE ════════════════════════════════════
