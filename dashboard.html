@@ -277,6 +277,28 @@ tr:hover td { background:#fafafa; }
 }
 .dash-card-title { font-size:14px; font-weight:600; margin-bottom:16px; }
 .chart-wrap { position:relative; height:220px; }
+.finance-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.finance-panels {
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px; margin-top:20px;
+}
+.finance-panel {
+  background:var(--white); border:1px solid var(--border);
+  border-radius:var(--radius); overflow:hidden;
+}
+.finance-panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px; border-bottom:1px solid var(--border);
+}
+.finance-panel-title { font-size:14px; font-weight:700; }
+.finance-setup-note {
+  padding:14px 16px; border:1px solid #fde68a;
+  background:#fffbeb; color:#92400e; border-radius:var(--radius);
+  font-size:13px; line-height:1.5; margin-bottom:18px;
+}
+.amount-income { color:#15803d; font-weight:700; }
+.amount-expense { color:var(--danger); font-weight:700; }
+@media(max-width:1100px){ .finance-panels { grid-template-columns:1fr; } }
 
 /* ══ CALENDAR ══ */
 .calendar-wrap { padding:0; }
@@ -554,6 +576,11 @@ const NAV = [
   { id:'assignments', icon:'📋', label:'Assignments' },
   { id:'results',     icon:'📊', label:'Results' },
   { id:'attendance',  icon:'✅', label:'Attendance' },
+  { section:'FINANCE' },
+  { id:'finance',     icon:'$', label:'Finance' },
+  { id:'fees',        icon:'F', label:'Fees' },
+  { id:'payments',    icon:'P', label:'Payments' },
+  { id:'salaries',    icon:'S', label:'Salaries' },
   { section:'EVENTS' },
   { id:'events',      icon:'📅', label:'Events' },
   { id:'announcements',icon:'📢', label:'Announcements' },
@@ -605,6 +632,10 @@ function renderPage(page){
     case 'assignments':  renderList('assignments','Assignments',['title','startDate','dueDate','lesson']); break;
     case 'results':      renderList('results','Results',['score','studentId','assignmentId']); break;
     case 'attendance':   renderList('attendance','Attendance',['date','present','studentId','lessonId']); break;
+    case 'finance':      renderFinancePage(); break;
+    case 'fees':         renderList('fees','Fees',['title','amount','dueDate','classId','description']); break;
+    case 'payments':     renderList('payments','Student Payments',['studentId','feeId','amount','method','status','paidAt']); break;
+    case 'salaries':     renderList('salaries','Teacher Salaries',['teacherId','amount','month','status','paidAt']); break;
     case 'events':       renderEventsPage(); break;
     case 'announcements':renderAnnouncementsPage(); break;
   }
@@ -652,6 +683,9 @@ const TABLE_LABELS = {
   attendance: 'Attendance',
   events: 'Event',
   announcements: 'Announcement',
+  fees: 'Fee',
+  payments: 'Student Payment',
+  salaries: 'Teacher Salary',
 };
 
 function tableLabel(table){ return TABLE_LABELS[table] || table; }
@@ -687,6 +721,48 @@ function inputValue(value, type){
   if(type === 'datetime-local') return raw.slice(0,16);
   return raw;
 }
+function fmtMoney(value){
+  const amount = Number(value) || 0;
+  return amount.toLocaleString('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 });
+}
+function sumAmount(rows){
+  return (rows || []).reduce((total, row) => total + (Number(row.amount) || 0), 0);
+}
+function recentMonthKeys(){
+  const today = new Date();
+  return Array.from({length:6}, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - 5 + i, 1);
+    return {
+      key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+      label: d.toLocaleString('default', {month:'short'}),
+    };
+  });
+}
+function financeSeries(payments = [], salaries = []){
+  const months = recentMonthKeys();
+  const income = months.map(m => sumAmount(payments.filter(p => String(p.paidAt || '').slice(0,7) === m.key)));
+  const expense = months.map(m => sumAmount(salaries.filter(s => String(s.paidAt || '').slice(0,7) === m.key)));
+  return { labels: months.map(m => m.label), income, expense };
+}
+async function fetchFinanceTable(table, orderColumn){
+  let query = sb.from(table).select('*');
+  if(orderColumn) query = query.order(orderColumn, {ascending:false});
+  const {data, error} = await query;
+  return { data: data || [], error };
+}
+async function loadFinanceData(){
+  const [fees, payments, salaries] = await Promise.all([
+    fetchFinanceTable('fees', 'dueDate'),
+    fetchFinanceTable('payments', 'paidAt'),
+    fetchFinanceTable('salaries', 'paidAt'),
+  ]);
+  return {
+    fees: fees.data,
+    payments: payments.data,
+    salaries: salaries.data,
+    errors: [fees.error, payments.error, salaries.error].filter(Boolean),
+  };
+}
 
 // ══ DASHBOARD ══════════════════════════════════════════════
 async function renderDashboard(){
@@ -709,6 +785,8 @@ async function renderDashboard(){
     sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
   ]);
   calendarEvents = events || [];
+  const finance = await loadFinanceData();
+  const financeData = financeSeries(finance.payments, finance.salaries);
 
   // Attendance data for chart
   const today = new Date();
@@ -774,7 +852,10 @@ async function renderDashboard(){
   <div class="dash-grid">
     <!-- Finance chart -->
     <div class="dash-card">
-      <div class="dash-card-title">Finance Overview</div>
+      <div class="dash-card-title" style="display:flex;justify-content:space-between;align-items:center">
+        Finance Overview
+        <span onclick="navigate('finance')" style="font-size:12px;color:var(--primary);cursor:pointer">Open</span>
+      </div>
       <div class="chart-wrap"><canvas id="fin-chart"></canvas></div>
     </div>
     <!-- Events -->
@@ -820,10 +901,10 @@ async function renderDashboard(){
   chartInstances['fin'] = new Chart(finCtx, {
     type: 'line',
     data: {
-      labels: last6,
+      labels: financeData.labels,
       datasets: [
-        { label:'Income',  data: last6.map(()=>Math.floor(2000+Math.random()*5000)), borderColor:'#4361EE', backgroundColor:'rgba(67,97,238,.08)', fill:true, tension:.4 },
-        { label:'Expense', data: last6.map(()=>Math.floor(1000+Math.random()*3000)), borderColor:'#FAE27C', backgroundColor:'rgba(250,226,124,.1)', fill:true, tension:.4 },
+        { label:'Income',  data: financeData.income, borderColor:'#4361EE', backgroundColor:'rgba(67,97,238,.08)', fill:true, tension:.4 },
+        { label:'Expense', data: financeData.expense, borderColor:'#FAE27C', backgroundColor:'rgba(250,226,124,.1)', fill:true, tension:.4 },
       ]
     },
     options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}},
@@ -932,6 +1013,13 @@ let listPage = 1;
 const PAGE_SIZE = 10;
 let listData = [];
 let listFilter = '';
+const SEARCH_COLUMNS = {
+  fees: 'title',
+  payments: 'studentId',
+  salaries: 'teacherId',
+  events: 'title',
+  announcements: 'title',
+};
 
 async function renderList(table, title, columns){
   const c = document.getElementById('pages-container');
@@ -966,8 +1054,8 @@ async function fetchAndRenderTable(table, title){
   const from = (listPage-1)*PAGE_SIZE;
   let query = sb.from(table).select('*',{count:'exact'}).range(from, from+PAGE_SIZE-1);
   if(listFilter) {
-    // name-based search for most tables
-    query = query.ilike('name', `%${listFilter}%`);
+    const searchColumn = SEARCH_COLUMNS[table] || 'name';
+    query = query.ilike(searchColumn, `%${listFilter}%`);
   }
   const {data, count, error} = await query;
 
@@ -1000,7 +1088,7 @@ async function fetchAndRenderTable(table, title){
                 </div>
               </div>
             </td>
-            ${cols.slice(1).map(k=>`<td>${formatCell(row[k])}</td>`).join('')}
+            ${cols.slice(1).map(k=>`<td>${formatCell(row[k], k)}</td>`).join('')}
             <td>
               <div class="action-btns">
                 <button class="icon-btn icon-btn-view" onclick="${callHandler('viewRecord', table, row.id)}" title="View">👁</button>
@@ -1025,8 +1113,14 @@ async function fetchAndRenderTable(table, title){
     </div>`;
 }
 
-function formatCell(val){
+function formatCell(val, key=''){
   if(val===null||val===undefined) return '—';
+  if(String(key).toLowerCase().includes('amount')) return fmtMoney(val);
+  if(String(key).toLowerCase()==='status') {
+    const status = String(val);
+    const cls = status.toLowerCase()==='paid' ? 'badge-green' : status.toLowerCase()==='pending' ? 'badge-yellow' : 'badge-gray';
+    return `<span class="badge-pill ${cls}">${escapeHtml(status)}</span>`;
+  }
   if(typeof val==='boolean') return val?'<span class="badge-pill badge-green">Yes</span>':'<span class="badge-pill badge-red">No</span>';
   if(typeof val==='string' && val.match(/^\d{4}-\d{2}-\d{2}/)) return fmtDate(val);
   if(typeof val==='string' && val.length>40) return val.slice(0,40)+'…';
@@ -1046,7 +1140,7 @@ async function viewRecord(table, id){
   const rows = Object.entries(data).map(([k,v])=>`
     <div class="info-item">
       <div class="label">${k}</div>
-      <div class="value">${formatCell(v)}</div>
+      <div class="value">${formatCell(v, k)}</div>
     </div>`).join('');
   openModal(`${tableLabel(table)} Details`, `
     <div class="profile-card" style="margin-bottom:20px">
@@ -1095,6 +1189,9 @@ function getTableFields(table){
     assignments:  [{n:'title',l:'Title',t:'text',req:true},{n:'startDate',l:'Start Date',t:'date'},{n:'dueDate',l:'Due Date',t:'date'},{n:'lessonId',l:'Lesson ID',t:'text'}],
     results:      [{n:'score',l:'Score',t:'number',req:true},{n:'examId',l:'Exam ID',t:'text'},{n:'assignmentId',l:'Assignment ID',t:'text'},{n:'studentId',l:'Student ID',t:'text'}],
     attendance:   [{n:'date',l:'Date',t:'date',req:true},{n:'present',l:'Present',t:'select',opts:['true','false']},{n:'studentId',l:'Student ID',t:'text'},{n:'lessonId',l:'Lesson ID',t:'text'}],
+    fees:         [{n:'title',l:'Fee Title',t:'text',req:true},{n:'amount',l:'Amount',t:'number',req:true},{n:'dueDate',l:'Due Date',t:'date'},{n:'classId',l:'Class ID',t:'text'},{n:'description',l:'Description',t:'textarea'}],
+    payments:     [{n:'studentId',l:'Student ID',t:'text',req:true},{n:'feeId',l:'Fee ID',t:'text'},{n:'amount',l:'Amount',t:'number',req:true},{n:'method',l:'Method',t:'select',opts:['Cash','Card','UPI','Bank Transfer','Cheque']},{n:'status',l:'Status',t:'select',opts:['Paid','Pending','Partial']},{n:'paidAt',l:'Payment Date',t:'date'},{n:'note',l:'Note',t:'textarea'}],
+    salaries:     [{n:'teacherId',l:'Teacher ID',t:'text',req:true},{n:'amount',l:'Amount',t:'number',req:true},{n:'month',l:'Month',t:'text',req:true},{n:'status',l:'Status',t:'select',opts:['Paid','Pending']},{n:'paidAt',l:'Payment Date',t:'date'},{n:'note',l:'Note',t:'textarea'}],
     events:       [{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'},{n:'classId',l:'Class ID',t:'text'}],
     announcements:[{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'date',l:'Date',t:'date'},{n:'classId',l:'Class ID',t:'text'}],
   };
@@ -1169,6 +1266,112 @@ function normalizeFieldValue(value, type){
   if(value === 'true') return true;
   if(value === 'false') return false;
   return value;
+}
+
+// Finance page
+async function renderFinancePage(){
+  const c = document.getElementById('pages-container');
+  const finance = await loadFinanceData();
+  const totalFees = sumAmount(finance.fees);
+  const totalPayments = sumAmount(finance.payments);
+  const totalSalaries = sumAmount(finance.salaries);
+  const balance = totalPayments - totalSalaries;
+  const series = financeSeries(finance.payments, finance.salaries);
+  const setupNote = finance.errors.length ? `
+    <div class="finance-setup-note">
+      Finance tables are not available in Supabase yet. Run the updated <strong>supabase-schema.sql</strong> in Supabase SQL Editor, then refresh this page.
+    </div>` : '';
+
+  c.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Finance</div>
+        <div class="page-subtitle">Fees, student payments, and teacher salaries</div>
+      </div>
+      ${currentUser.role==='admin'?`
+        <div class="finance-actions">
+          <button class="btn btn-primary" onclick="${callHandler('openAddModal', 'fees')}">+ Add Fee</button>
+          <button class="btn btn-primary" onclick="${callHandler('openAddModal', 'payments')}">+ Add Payment</button>
+          <button class="btn btn-primary" onclick="${callHandler('openAddModal', 'salaries')}">+ Add Salary</button>
+        </div>`:''}
+    </div>
+    ${setupNote}
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-yellow">F</div><span class="stat-more" onclick="navigate('fees')" style="cursor:pointer">See all →</span></div>
+        <div class="stat-value">${fmtMoney(totalFees)}</div>
+        <div class="stat-label">Fees Planned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-sky">P</div><span class="stat-more" onclick="navigate('payments')" style="cursor:pointer">See all →</span></div>
+        <div class="stat-value amount-income">${fmtMoney(totalPayments)}</div>
+        <div class="stat-label">Student Payments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-purple">S</div><span class="stat-more" onclick="navigate('salaries')" style="cursor:pointer">See all →</span></div>
+        <div class="stat-value amount-expense">${fmtMoney(totalSalaries)}</div>
+        <div class="stat-label">Teacher Salaries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top"><div class="stat-icon bg-sky-light">B</div></div>
+        <div class="stat-value ${balance < 0 ? 'amount-expense' : 'amount-income'}">${fmtMoney(balance)}</div>
+        <div class="stat-label">Balance</div>
+      </div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">Finance Overview</div>
+      <div class="chart-wrap"><canvas id="finance-page-chart"></canvas></div>
+    </div>
+    <div class="finance-panels">
+      ${financePreview('fees', 'Fees', finance.fees, ['title','amount','dueDate','classId'])}
+      ${financePreview('payments', 'Student Payments', finance.payments, ['studentId','amount','status','paidAt'])}
+      ${financePreview('salaries', 'Teacher Salaries', finance.salaries, ['teacherId','amount','status','paidAt'])}
+    </div>`;
+
+  const ctx = document.getElementById('finance-page-chart').getContext('2d');
+  if(chartInstances['finance-page']) chartInstances['finance-page'].destroy();
+  chartInstances['finance-page'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: series.labels,
+      datasets: [
+        { label:'Payments', data:series.income, borderColor:'#4361EE', backgroundColor:'rgba(67,97,238,.08)', fill:true, tension:.4 },
+        { label:'Salaries', data:series.expense, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', fill:true, tension:.4 },
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}},
+      scales:{y:{beginAtZero:true},x:{grid:{display:false}}} }
+  });
+}
+
+function financePreview(table, title, rows, columns){
+  const body = rows?.length ? `
+    <table>
+      <thead><tr>${columns.map(col=>`<th>${col}</th>`).join('')}<th>Actions</th></tr></thead>
+      <tbody>
+        ${rows.slice(0,5).map(row=>`
+          <tr>
+            ${columns.map(col=>`<td>${formatCell(row[col], col)}</td>`).join('')}
+            <td>
+              <div class="action-btns">
+                <button class="icon-btn icon-btn-view" onclick="${callHandler('viewRecord', table, row.id)}" title="View">👁</button>
+                ${currentUser.role==='admin'?`
+                  <button class="icon-btn icon-btn-edit" onclick="${callHandler('editRecord', table, row.id)}" title="Edit">✏️</button>
+                  <button class="icon-btn icon-btn-del" onclick="${callHandler('deleteRecord', table, row.id)}" title="Delete">🗑</button>
+                `:''}
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>` : '<div class="empty-state"><div class="empty-icon">$</div><p>No records yet</p></div>';
+  return `
+    <div class="finance-panel">
+      <div class="finance-panel-head">
+        <div class="finance-panel-title">${title}</div>
+        <button class="btn btn-sm btn-ghost" onclick="${callHandler('navigate', table)}">View all</button>
+      </div>
+      <div style="overflow-x:auto">${body}</div>
+    </div>`;
 }
 
 // ══ EVENTS PAGE ════════════════════════════════════════════
