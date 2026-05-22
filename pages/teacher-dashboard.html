@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Teacher Dashboard – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search…"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title" id="welcome-msg">Teacher Dashboard</h1>
+        <span class="text-muted text-sm" id="date-label"></span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
+        <!-- Schedule -->
+        <div class="card">
+          <h2 style="font-size:1rem;font-weight:700;margin-bottom:16px">📖 My Lessons This Week</h2>
+          <div id="my-lessons"><div class="loading">Loading…</div></div>
+        </div>
+
+        <!-- Quick links + announcements -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <h2 style="font-size:1rem;font-weight:700;margin-bottom:12px">⚡ Quick Actions</h2>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <a href="attendance.html" class="btn btn-ghost" style="justify-content:flex-start">✅ Mark Attendance</a>
+              <a href="exams.html"      class="btn btn-ghost" style="justify-content:flex-start">📝 Manage Exams</a>
+              <a href="assignments.html"class="btn btn-ghost" style="justify-content:flex-start">📋 Assignments</a>
+              <a href="results.html"    class="btn btn-ghost" style="justify-content:flex-start">📊 Enter Results</a>
+            </div>
+          </div>
+          <div class="card">
+            <h2 style="font-size:1rem;font-weight:700;margin-bottom:12px">📢 Announcements</h2>
+            <div id="ann-list"><div class="loading">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script><script src="../js/sidebar.js"></script>
+<script>
+  const user = initLayout(['teacher','admin']);
+  document.getElementById('date-label').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  if (user) document.getElementById('welcome-msg').textContent = `Welcome back, ${user.username} 👋`;
+
+  async function loadLessons() {
+    try {
+      const res = await API.getLessons({ filter_field:'teacherId', filter_value: user?.id || '', limit:20 });
+      const el  = document.getElementById('my-lessons');
+      if (!res.data.length) { el.innerHTML='<p class="empty-state">No lessons assigned yet.</p>'; return; }
+      const DAYS = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
+      el.innerHTML = DAYS.map(day => {
+        const dayLessons = res.data.filter(l => l.day === day);
+        if (!dayLessons.length) return '';
+        return `<div style="margin-bottom:12px">
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">${day}</div>
+          ${dayLessons.map(l=>`
+            <div class="schedule-lesson" style="margin-bottom:6px">
+              <div class="lesson-name">${l.name}</div>
+              <div class="lesson-teach">${l.startTime} – ${l.endTime} &nbsp;|&nbsp; Class: ${l.classId}</div>
+            </div>`).join('')}
+        </div>`;
+      }).join('') || '<p class="empty-state">No lessons found.</p>';
+    } catch (err) { toast(err.message,'error'); }
+  }
+
+  async function loadAnn() {
+    try {
+      const res = await API.getAnnouncements({ limit:4 });
+      const el  = document.getElementById('ann-list');
+      if (!res.data.length) { el.innerHTML='<p class="empty-state">No announcements.</p>'; return; }
+      el.innerHTML = res.data.map(a=>`
+        <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-weight:600;font-size:.88rem">${a.title}</div>
+          <div class="text-sm text-muted">${fmtDate(a.date)}</div>
+        </div>`).join('');
+    } catch (_) {}
+  }
+
+  loadLessons();
+  loadAnn();
+</script>
+</body>
+</html>

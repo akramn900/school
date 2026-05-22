@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Exams – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search…" id="search-input"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">📝 Exams</h1>
+        <button class="btn btn-primary" id="create-btn">+ Add Exam</button>
+      </div>
+      <div class="card">
+        <div id="data-table-container"><div class="loading">Loading…</div></div>
+        <div id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script><script src="../js/crud-page.js"></script>
+<script>
+initCrudPage({
+  resource:'exams', allowedRoles:['admin','teacher','student','parent'],
+  apiList:p=>API.getExams(p), apiCreate:d=>API.createExam(d),
+  apiUpdate:d=>API.updateExam(d), apiDelete:id=>API.deleteExam(id),
+  searchKey:'title',
+  columns:[
+    {key:'title',    label:'Exam Title'},
+    {key:'lessonId', label:'Lesson ID'},
+    {key:'startTime',label:'Start',    render:r=>fmtDateTime(r.startTime)},
+    {key:'endTime',  label:'End',      render:r=>fmtDateTime(r.endTime)},
+  ],
+  formFields:[
+    {name:'title',    label:'Exam Title',  required:true, span2:true},
+    {name:'lessonId', label:'Lesson ID',   required:true},
+    {name:'startTime',label:'Start',       type:'datetime-local', required:true},
+    {name:'endTime',  label:'End',         type:'datetime-local', required:true},
+  ],
+});
+</script>
+</body>
+</html>

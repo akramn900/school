@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Messages - SchooLama</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">Menu</button>
+      <div class="header-search"><span></span><input type="text" placeholder="Search messages..."></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header"><h1 class="page-title">Messages</h1></div>
+      <section class="utility-layout">
+        <div class="lama-panel">
+          <div class="panel-header"><h2>Inbox</h2><img src="../assets/lama/message.png" alt=""></div>
+          <div class="message-list" id="message-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script><script src="../js/sidebar.js"></script>
+<script>
+  const user = initLayout(['admin','teacher','student','parent']);
+  const rows = [
+    { from:'Office', title:'Welcome to SchooLama', body:'Your dashboard is connected to the school spreadsheet backend.', tag:'New' },
+    { from:'Academic Team', title:'Weekly schedule update', body:'Lessons, exams, assignments, and results are available from the main menu.', tag:'Info' },
+    { from:'System', title:'Demo data ready', body:'Use the seed function in Code.gs to populate realistic dashboard content.', tag:'Tip' },
+  ];
+  document.getElementById('message-list').innerHTML = rows.map(m => `
+    <article class="message-row">
+      <div>
+        <h3>${m.title}</h3>
+        <p><strong>${m.from}</strong> - ${m.body}</p>
+      </div>
+      <span class="badge badge-sky">${m.tag}</span>
+    </article>`).join('');
+</script>
+</body>
+</html>

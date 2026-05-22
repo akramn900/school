@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Attendance – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search by student ID…" id="search-input"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">✅ Attendance</h1>
+        <button class="btn btn-primary" id="create-btn">+ Mark Attendance</button>
+      </div>
+      <div class="card">
+        <div id="data-table-container"><div class="loading">Loading…</div></div>
+        <div id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script><script src="../js/crud-page.js"></script>
+<script>
+initCrudPage({
+  resource:'attendance', allowedRoles:['admin','teacher','student','parent'],
+  apiList:p=>API.getAttendance(p), apiCreate:d=>API.markAttendance(d),
+  apiUpdate:d=>API.markAttendance(d), apiDelete:id=>API.deleteAttendance(id),
+  searchKey:'studentId',
+  columns:[
+    {key:'studentId',label:'Student ID'},
+    {key:'lessonId', label:'Lesson ID'},
+    {key:'date',     label:'Date',    render:r=>fmtDate(r.date)},
+    {key:'present',  label:'Status',  render:r=>{
+      const present = r.present === true || r.present === 'true' || r.present === 'TRUE';
+      return present ? '<span class="badge badge-green">Present</span>' : '<span class="badge badge-red">Absent</span>';
+    }},
+  ],
+  formFields:[
+    {name:'studentId',label:'Student ID', required:true},
+    {name:'lessonId', label:'Lesson ID',  required:true},
+    {name:'date',     label:'Date',       type:'date', required:true},
+    {name:'present',  label:'Status',     type:'select', options:[{value:'true',label:'Present'},{value:'false',label:'Absent'}]},
+  ],
+});
+</script>
+</body>
+</html>

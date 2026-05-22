@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Events – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search…" id="search-input"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">📅 Events</h1>
+        <div class="flex gap-2">
+          <button class="btn btn-ghost" id="view-toggle" onclick="toggleView()">📋 List View</button>
+          <button class="btn btn-primary" id="create-btn">+ Add Event</button>
+        </div>
+      </div>
+
+      <!-- Calendar view -->
+      <div class="card mb-4" id="calendar-card">
+        <div class="flex items-center gap-2 mb-4" style="justify-content:space-between">
+          <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">← Prev</button>
+          <h3 id="cal-month-label" style="font-size:1rem;font-weight:700"></h3>
+          <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">Next →</button>
+        </div>
+        <div class="calendar-grid">
+          <div class="cal-day-name">Sun</div><div class="cal-day-name">Mon</div>
+          <div class="cal-day-name">Tue</div><div class="cal-day-name">Wed</div>
+          <div class="cal-day-name">Thu</div><div class="cal-day-name">Fri</div>
+          <div class="cal-day-name">Sat</div>
+        </div>
+        <div class="calendar-grid" id="cal-grid"></div>
+      </div>
+
+      <!-- List view (CRUD table) -->
+      <div class="card" id="list-card" style="display:none">
+        <div id="data-table-container"><div class="loading">Loading…</div></div>
+        <div id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script><script src="../js/crud-page.js"></script>
+<script>
+  let calendarView = true;
+  let calDate = new Date();
+  let allEvents = [];
+
+  function toggleView() {
+    calendarView = !calendarView;
+    document.getElementById('calendar-card').style.display = calendarView ? '' : 'none';
+    document.getElementById('list-card').style.display     = calendarView ? 'none' : '';
+    document.getElementById('view-toggle').textContent = calendarView ? '📋 List View' : '📆 Calendar View';
+  }
+
+  function changeMonth(delta) {
+    calDate.setMonth(calDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  async function loadEvents() {
+    try {
+      const res = await API.getEvents({ limit: 200 });
+      allEvents = res.data;
+      renderCalendar();
+    } catch (e) { toast(e.message,'error'); }
+  }
+
+  function renderCalendar() {
+    const label = calDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    document.getElementById('cal-month-label').textContent = label;
+
+    const y = calDate.getFullYear(), m = calDate.getMonth();
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const today = new Date();
+
+    // Map events to date strings
+    const evMap = {};
+    allEvents.forEach(ev => {
+      const d = ev.startTime ? new Date(ev.startTime).toDateString() : null;
+      if (d) { evMap[d] = evMap[d] || []; evMap[d].push(ev); }
+    });
+
+    let html = '';
+    // Empty cells before first day
+    for (let i=0; i<firstDay; i++) html += '<div class="cal-day other-month"></div>';
+
+    for (let day=1; day<=daysInMonth; day++) {
+      const date = new Date(y, m, day);
+      const ds   = date.toDateString();
+      const isToday = ds === today.toDateString();
+      const evs  = evMap[ds] || [];
+      html += `<div class="cal-day${isToday?' today':''}">
+        <div class="day-num">${day}</div>
+        ${evs.map(ev=>`<div class="cal-event" title="${ev.title}">${ev.title}</div>`).join('')}
+      </div>`;
+    }
+    document.getElementById('cal-grid').innerHTML = html;
+  }
+
+  initCrudPage({
+    resource:'events', allowedRoles:['admin','teacher','student','parent'],
+    apiList:p=>API.getEvents(p), apiCreate:d=>API.createEvent(d),
+    apiUpdate:d=>API.updateEvent(d), apiDelete:id=>API.deleteEvent(id),
+    searchKey:'title',
+    columns:[
+      {key:'title',      label:'Event'},
+      {key:'description',label:'Description'},
+      {key:'classId',    label:'Class ID', render:r=>r.classId||'<span class="badge badge-green">All</span>'},
+      {key:'startTime',  label:'Start',    render:r=>fmtDateTime(r.startTime)},
+      {key:'endTime',    label:'End',      render:r=>fmtDateTime(r.endTime)},
+    ],
+    formFields:[
+      {name:'title',      label:'Title',      required:true, span2:true},
+      {name:'description',label:'Description',span2:true},
+      {name:'classId',    label:'Class ID (leave empty = all classes)'},
+      {name:'startTime',  label:'Start',      type:'datetime-local', required:true},
+      {name:'endTime',    label:'End',        type:'datetime-local', required:true},
+    ],
+  });
+
+  loadEvents();
+</script>
+</body>
+</html>

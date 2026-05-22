@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Announcements – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search…" id="search-input"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">📢 Announcements</h1>
+        <button class="btn btn-primary" id="create-btn">+ Add Announcement</button>
+      </div>
+      <div class="card">
+        <div id="data-table-container"><div class="loading">Loading…</div></div>
+        <div id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script><script src="../js/crud-page.js"></script>
+<script>
+initCrudPage({
+  resource:'announcements', allowedRoles:['admin','teacher','student','parent'],
+  apiList:p=>API.getAnnouncements(p), apiCreate:d=>API.createAnnouncement(d),
+  apiUpdate:d=>API.updateAnnouncement(d), apiDelete:id=>API.deleteAnnouncement(id),
+  searchKey:'title',
+  columns:[
+    {key:'title',      label:'Title'},
+    {key:'description',label:'Description'},
+    {key:'classId',    label:'Class',  render:r=>r.classId||'<span class="badge badge-green">All</span>'},
+    {key:'date',       label:'Date',   render:r=>fmtDate(r.date)},
+  ],
+  formFields:[
+    {name:'title',      label:'Title',          required:true, span2:true},
+    {name:'description',label:'Description',    span2:true, type:'textarea'},
+    {name:'classId',    label:'Class ID (empty = all)'},
+    {name:'date',       label:'Date',           type:'date', required:true},
+  ],
+});
+</script>
+</body>
+</html>

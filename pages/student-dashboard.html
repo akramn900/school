@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Student Dashboard – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search…"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title" id="welcome-msg">Student Dashboard</h1>
+        <span class="text-muted text-sm" id="date-label"></span>
+      </div>
+
+      <div class="stat-grid" id="stat-grid"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <h2 style="font-size:1rem;font-weight:700;margin-bottom:12px">📅 Upcoming Exams</h2>
+          <div id="exams-list"><div class="loading">Loading…</div></div>
+        </div>
+        <div class="card">
+          <h2 style="font-size:1rem;font-weight:700;margin-bottom:12px">📋 Assignments Due</h2>
+          <div id="assign-list"><div class="loading">Loading…</div></div>
+        </div>
+      </div>
+
+      <div class="card mt-4">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:12px">📢 Announcements</h2>
+        <div id="ann-list"><div class="loading">Loading…</div></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script><script src="../js/sidebar.js"></script>
+<script>
+  const user = initLayout(['student']);
+  document.getElementById('date-label').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  if (user) document.getElementById('welcome-msg').textContent = `Hello, ${user.username} 🎒`;
+
+  // Quick stats
+  (async()=>{
+    try {
+      const [exRes, asRes, atRes] = await Promise.all([
+        API.getExams({limit:100}),
+        API.getAssignments({limit:100}),
+        API.getAttendance({filter_field:'studentId', filter_value: user?.id||'', limit:100}),
+      ]);
+      const present = atRes.data.filter(r=>r.present==='true'||r.present===true).length;
+      const pct = atRes.data.length ? Math.round(present/atRes.data.length*100) : 100;
+      document.getElementById('stat-grid').innerHTML = `
+        <div class="stat-card sky">   <div class="stat-icon">📝</div><div class="stat-value">${exRes.total}</div><div class="stat-label">Total Exams</div></div>
+        <div class="stat-card purple"><div class="stat-icon">📋</div><div class="stat-value">${asRes.total}</div><div class="stat-label">Assignments</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">✅</div><div class="stat-value">${pct}%</div><div class="stat-label">Attendance Rate</div></div>`;
+    } catch (_) { document.getElementById('stat-grid').innerHTML=''; }
+  })();
+
+  async function loadExams() {
+    try {
+      const res = await API.getExams({limit:5});
+      const el  = document.getElementById('exams-list');
+      if (!res.data.length) { el.innerHTML='<p class="empty-state">No exams yet.</p>'; return; }
+      el.innerHTML = res.data.map(e=>`
+        <div style="padding:9px 0;border-bottom:1px solid var(--border)">
+          <div style="font-weight:600;font-size:.9rem">${e.title}</div>
+          <div class="text-sm text-muted">${fmtDateTime(e.startTime)}</div>
+        </div>`).join('');
+    } catch (_) {}
+  }
+
+  async function loadAssignments() {
+    try {
+      const res = await API.getAssignments({limit:5});
+      const el  = document.getElementById('assign-list');
+      if (!res.data.length) { el.innerHTML='<p class="empty-state">No assignments yet.</p>'; return; }
+      el.innerHTML = res.data.map(a=>`
+        <div style="padding:9px 0;border-bottom:1px solid var(--border)">
+          <div style="font-weight:600;font-size:.9rem">${a.title}</div>
+          <div class="text-sm text-muted">Due: <span class="badge badge-yellow">${fmtDate(a.dueDate)}</span></div>
+        </div>`).join('');
+    } catch (_) {}
+  }
+
+  async function loadAnn() {
+    try {
+      const res = await API.getAnnouncements({limit:6});
+      const el  = document.getElementById('ann-list');
+      if (!res.data.length) { el.innerHTML='<p class="empty-state">No announcements.</p>'; return; }
+      el.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        ${res.data.map(a=>`
+          <div style="padding:12px;background:var(--bg);border-radius:8px">
+            <div style="font-weight:600;font-size:.9rem;margin-bottom:4px">${a.title}</div>
+            <div class="text-sm text-muted">${a.description||''}</div>
+            <div class="text-sm text-muted" style="margin-top:6px">${fmtDate(a.date)}</div>
+          </div>`).join('')}
+      </div>`;
+    } catch (_) {}
+  }
+
+  loadExams(); loadAssignments(); loadAnn();
+</script>
+</body>
+</html>

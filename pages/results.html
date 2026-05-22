@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Results – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search by student ID…" id="search-input"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">📊 Results</h1>
+        <button class="btn btn-primary" id="create-btn">+ Add Result</button>
+      </div>
+      <div class="card">
+        <div id="data-table-container"><div class="loading">Loading…</div></div>
+        <div id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script><script src="../js/crud-page.js"></script>
+<script>
+initCrudPage({
+  resource:'results', allowedRoles:['admin','teacher','student','parent'],
+  apiList:p=>API.getResults(p), apiCreate:d=>API.createResult(d),
+  apiUpdate:d=>API.updateResult(d), apiDelete:id=>API.deleteResult(id),
+  searchKey:'studentId',
+  columns:[
+    {key:'studentId',   label:'Student ID'},
+    {key:'score',       label:'Score', render:r=>{
+      const s=parseFloat(r.score)||0;
+      const cls=s>=80?'badge-green':s>=50?'badge-yellow':'badge-red';
+      return `<span class="badge ${cls}">${s}</span>`;
+    }},
+    {key:'examId',      label:'Exam ID'},
+    {key:'assignmentId',label:'Assignment ID'},
+  ],
+  formFields:[
+    {name:'studentId',   label:'Student ID',    required:true},
+    {name:'score',       label:'Score (0-100)', type:'number', required:true},
+    {name:'examId',      label:'Exam ID'},
+    {name:'assignmentId',label:'Assignment ID'},
+  ],
+});
+</script>
+</body>
+</html>

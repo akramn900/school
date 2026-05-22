@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Parents – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search"><span>🔍</span><input type="text" placeholder="Search…" id="search-input"></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">👨‍👩‍👧 Parents</h1>
+        <button class="btn btn-primary" id="create-btn">+ Add Parent</button>
+      </div>
+      <div class="card">
+        <div id="data-table-container"><div class="loading">Loading…</div></div>
+        <div id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script><script src="../js/crud-page.js"></script>
+<script>
+initCrudPage({
+  resource:'parents', allowedRoles:['admin'],
+  apiList:p=>API.getParents(p), apiCreate:d=>API.createParent(d),
+  apiUpdate:d=>API.updateParent(d), apiDelete:id=>API.deleteParent(id),
+  searchKey:'name',
+  columns:[
+    {key:'name',    label:'Name',   render:r=>`<strong>${r.name} ${r.surname}</strong>`},
+    {key:'username',label:'Username'},
+    {key:'email',   label:'Email'},
+    {key:'phone',   label:'Phone'},
+    {key:'address', label:'Address'},
+  ],
+  formFields:[
+    {name:'username',label:'Username',required:true},
+    {name:'password',label:'Password',type:'password'},
+    {name:'name',    label:'First Name',required:true},
+    {name:'surname', label:'Last Name', required:true},
+    {name:'email',   label:'Email',     type:'email'},
+    {name:'phone',   label:'Phone'},
+    {name:'address', label:'Address',   span2:true},
+  ],
+});
+</script>
+</body>
+</html>

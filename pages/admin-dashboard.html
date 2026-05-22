@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - SchooLama</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Open menu">Menu</button>
+      <div class="header-search">
+        <span></span>
+        <input type="text" placeholder="Search...">
+      </div>
+      <div class="header-right">
+        <div class="user-badge" id="user-info"></div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <section class="dashboard-layout">
+        <div class="dashboard-left">
+          <div class="lama-user-grid" id="lama-user-cards"></div>
+
+          <div class="dashboard-charts">
+            <section class="lama-panel count-chart" id="count-chart"></section>
+            <section class="lama-panel attendance-chart" id="attendance-chart"></section>
+          </div>
+
+          <section class="lama-panel finance-chart" id="finance-chart"></section>
+        </div>
+
+        <aside class="dashboard-right">
+          <section class="lama-panel">
+            <div class="panel-header">
+              <h2>Events</h2>
+              <img src="../assets/lama/moreDark.png" alt="">
+            </div>
+            <div id="events-panel"></div>
+          </section>
+
+          <section class="lama-panel">
+            <div class="panel-header">
+              <h2>Announcements</h2>
+              <a class="text-sm text-muted" href="announcements.html">View All</a>
+            </div>
+            <div class="announcement-list" id="announcements-panel"></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/lama-dashboard.js"></script>
+<script>
+  initLayout(['admin']);
+  initLamaDashboard();
+</script>
+</body>
+</html>

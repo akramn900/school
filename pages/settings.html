@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Settings - SchooLama</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">Menu</button>
+      <div class="header-search"><span></span><input type="text" placeholder="Search..."></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header"><h1 class="page-title">Settings</h1></div>
+      <section class="utility-layout">
+        <div class="lama-panel">
+          <div class="panel-header"><h2>Preferences</h2><img src="../assets/lama/moreDark.png" alt=""></div>
+          <div class="settings-list">
+            <div class="settings-row"><div><h3>Dashboard notifications</h3><p>Show message and announcement counters in the navbar.</p></div><span class="toggle"></span></div>
+            <div class="settings-row"><div><h3>Compact sidebar</h3><p>The sidebar automatically compacts on tablet-sized screens.</p></div><span class="toggle"></span></div>
+            <div class="settings-row"><div><h3>Apps Script backend</h3><p id="backend-url">Connected backend URL</p></div><span class="badge badge-green">Connected</span></div>
+          </div>
+        </div>
+        <div class="lama-panel">
+          <div class="panel-header"><h2>Deployment</h2><img src="../assets/lama/setting.png" alt=""></div>
+          <div class="settings-list">
+            <div class="settings-row"><div><h3>Frontend</h3><p>Static GitHub Pages app</p></div><span class="badge badge-sky">Ready</span></div>
+            <div class="settings-row"><div><h3>Database</h3><p>Google Spreadsheet via Apps Script</p></div><span class="badge badge-purple">Live</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script><script src="../js/sidebar.js"></script>
+<script>
+  initLayout(['admin','teacher','student','parent']);
+  document.getElementById('backend-url').textContent = window.BACKEND_URL;
+</script>
+</body>
+</html>

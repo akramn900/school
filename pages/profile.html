@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Profile - SchooLama</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">Menu</button>
+      <div class="header-search"><span></span><input type="text" placeholder="Search..."></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header"><h1 class="page-title">Profile</h1></div>
+      <section class="detail-layout">
+        <div class="profile-hero">
+          <img src="../assets/lama/avatar.png" alt="">
+          <div>
+            <h1 id="profile-name">User</h1>
+            <p id="profile-copy">Account information and role details for the signed in user.</p>
+            <div class="info-grid" id="profile-info"></div>
+          </div>
+        </div>
+        <aside class="lama-panel">
+          <div class="panel-header"><h2>Account</h2><img src="../assets/lama/moreDark.png" alt=""></div>
+          <div class="message-list">
+            <div class="message-row"><div><h3>Session</h3><p>Signed in with local Apps Script token</p></div><span class="badge badge-green">Active</span></div>
+            <div class="message-row"><div><h3>Role access</h3><p>Menus and pages follow your current role</p></div><span class="badge badge-purple" id="profile-role">Role</span></div>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script><script src="../js/sidebar.js"></script>
+<script>
+  const user = initLayout(['admin','teacher','student','parent']);
+  if (user) {
+    document.getElementById('profile-name').textContent = user.username;
+    document.getElementById('profile-role').textContent = user.role;
+    document.getElementById('profile-info').innerHTML = `
+      <div class="info-chip"><img src="../assets/lama/profile.png" alt=""><span>${user.role}</span></div>
+      <div class="info-chip"><img src="../assets/lama/mail.png" alt=""><span>${user.username}@school.local</span></div>
+      <div class="info-chip"><img src="../assets/lama/date.png" alt=""><span>${new Date().toLocaleDateString()}</span></div>
+      <div class="info-chip"><img src="../assets/lama/setting.png" alt=""><span>SchoolMS account</span></div>`;
+  }
+</script>
+</body>
+</html>

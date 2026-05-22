@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Details - SchooLama</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL='https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">Menu</button>
+      <div class="header-search"><span></span><input type="text" placeholder="Search..."></div>
+      <div class="header-right"><div class="user-badge" id="user-info"></div></div>
+    </header>
+    <main class="page-content">
+      <div class="page-header"><h1 class="page-title" id="detail-title">Details</h1></div>
+      <section class="detail-layout">
+        <div class="profile-hero" id="detail-hero"><div class="loading">Loading...</div></div>
+        <aside>
+          <div class="small-card-grid" id="detail-stats"></div>
+          <div class="lama-panel mt-4">
+            <div class="panel-header"><h2>Shortcuts</h2><img src="../assets/lama/moreDark.png" alt=""></div>
+            <div class="settings-list">
+              <a class="settings-row" href="results.html"><div><h3>Results</h3><p>View related scores</p></div><span class="badge badge-purple">Open</span></a>
+              <a class="settings-row" href="attendance.html"><div><h3>Attendance</h3><p>Check presence records</p></div><span class="badge badge-sky">Open</span></a>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="../js/api.js"></script><script src="../js/utils.js"></script><script src="../js/sidebar.js"></script>
+<script>
+  initLayout(['admin','teacher']);
+  const resource = getQueryParam('resource') || 'students';
+  const id = getQueryParam('id');
+  document.getElementById('detail-title').textContent = resource === 'teachers' ? 'Teacher Details' : 'Student Details';
+
+  async function loadDetail() {
+    const api = resource === 'teachers' ? API.getTeachers : API.getStudents;
+    const res = await api({ limit: 500 });
+    const row = (res.data || []).find(item => String(item.id) === String(id));
+    const hero = document.getElementById('detail-hero');
+    if (!row) {
+      hero.innerHTML = '<p class="empty-state">Record not found.</p>';
+      return;
+    }
+
+    const fullName = `${row.name || ''} ${row.surname || ''}`.trim() || row.username;
+    hero.innerHTML = `
+      <img src="${row.img || '../assets/lama/noAvatar.png'}" alt="">
+      <div>
+        <h1>${fullName}</h1>
+        <p>${resource === 'teachers' ? 'Teacher profile, contact information, and assigned school records.' : 'Student profile, class placement, attendance, and academic records.'}</p>
+        <div class="info-grid">
+          <div class="info-chip"><img src="../assets/lama/mail.png" alt=""><span>${row.email || 'No email'}</span></div>
+          <div class="info-chip"><img src="../assets/lama/phone.png" alt=""><span>${row.phone || 'No phone'}</span></div>
+          <div class="info-chip"><img src="../assets/lama/blood.png" alt=""><span>${row.bloodType || 'Blood type not set'}</span></div>
+          <div class="info-chip"><img src="../assets/lama/date.png" alt=""><span>${fmtDate(row.birthday)}</span></div>
+        </div>
+      </div>`;
+
+    document.getElementById('detail-stats').innerHTML = `
+      <div class="small-stat"><img src="../assets/lama/singleClass.png" alt=""><div><strong>${row.classId || '-'}</strong><span>Class</span></div></div>
+      <div class="small-stat"><img src="../assets/lama/singleBranch.png" alt=""><div><strong>${row.gradeId || '-'}</strong><span>Grade</span></div></div>
+      <div class="small-stat"><img src="../assets/lama/singleAttendance.png" alt=""><div><strong>${row.username || '-'}</strong><span>ID</span></div></div>
+      <div class="small-stat"><img src="../assets/lama/singleLesson.png" alt=""><div><strong>${row.sex || '-'}</strong><span>Gender</span></div></div>`;
+  }
+
+  loadDetail().catch(err => toast(err.message, 'error'));
+</script>
+</body>
+</html>

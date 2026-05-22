@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Students – SchoolMS</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script>window.BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz42jbxkFCmq0F9F8jo7kka9PuYraYBO8vU1z0FSkVRxmHVt069gy9JYdP06K5-vrECRw/exec';</script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-content">
+    <header class="top-header">
+      <button class="menu-toggle" id="menu-toggle">☰</button>
+      <div class="header-search">
+        <span>🔍</span>
+        <input type="text" placeholder="Search by name…" id="search-input">
+      </div>
+      <div class="header-right">
+        <div class="user-badge" id="user-info"></div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="page-header">
+        <h1 class="page-title">🎒 Students</h1>
+        <div class="flex gap-2 items-center flex-wrap">
+          <div id="filter-bar" class="flex gap-2"></div>
+          <button class="btn btn-primary" id="create-btn">+ Add Student</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="data-table-container"><div class="loading">Loading…</div></div>
+        <div id="pagination"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/crud-page.js"></script>
+<script>
+initCrudPage({
+  resource:     'students',
+  apiList:      p => API.getStudents(p),
+  apiCreate:    d => API.createStudent(d),
+  apiUpdate:    d => API.updateStudent(d),
+  apiDelete:    id => API.deleteStudent(id),
+  allowedRoles: ['admin'],
+  searchKey:    'name',
+  columns: [
+    { key: 'img',      label: 'Photo',   render: r => r.img ? `<img class="avatar" src="${r.img}">` : `<div class="avatar">${(r.name||'?')[0]}</div>` },
+    { key: 'name',     label: 'Name',    render: r => `<strong>${r.name} ${r.surname}</strong><br><span class="text-sm text-muted">${r.username}</span>` },
+    { key: 'email',    label: 'Email' },
+    { key: 'classId',  label: 'Class' },
+    { key: 'gradeId',  label: 'Grade',   render: r => `<span class="badge badge-sky">Grade ${r.gradeId}</span>` },
+    { key: 'sex',      label: 'Gender',  render: r => `<span class="badge badge-purple">${r.sex||'—'}</span>` },
+    { key: 'phone',    label: 'Phone' },
+    { key: 'birthday', label: 'Birthday',render: r => fmtDate(r.birthday) },
+  ],
+  formFields: [
+    { name:'username',  label:'Username',    required:true },
+    { name:'password',  label:'Password',    type:'password', placeholder:'Leave blank to keep' },
+    { name:'name',      label:'First Name',  required:true },
+    { name:'surname',   label:'Last Name',   required:true },
+    { name:'email',     label:'Email',       type:'email' },
+    { name:'phone',     label:'Phone' },
+    { name:'address',   label:'Address',     span2:true },
+    { name:'birthday',  label:'Birthday',    type:'date' },
+    { name:'sex',       label:'Gender',      type:'select', options:[{value:'MALE',label:'Male'},{value:'FEMALE',label:'Female'}] },
+    { name:'bloodType', label:'Blood Type',  type:'select', options:['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(v=>({value:v,label:v})) },
+    { name:'gradeId',   label:'Grade',       type:'select', options:[1,2,3,4,5,6].map(v=>({value:v,label:`Grade ${v}`})) },
+    { name:'classId',   label:'Class ID' },
+    { name:'parentId',  label:'Parent ID' },
+    { name:'img',       label:'Photo URL',   span2:true },
+  ],
+});
+</script>
+</body>
+</html>
