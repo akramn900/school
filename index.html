@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SchooLama – Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #C3EBFA;
+    --sky-light: #EDF9FD;
+    --purple: #CFCEFF;
+    --purple-light: #F1F0FF;
+    --yellow: #FAE27C;
+    --yellow-light: #FEFCE8;
+    --bg: #F7F8FA;
+    --white: #ffffff;
+    --text: #1a1a2e;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --primary: #4361EE;
+    --primary-dark: #3451db;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: radial-gradient(circle at 20% 20%, rgba(195,235,250,0.4) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 80%, rgba(207,206,255,0.4) 0%, transparent 50%);
+  }
+  .login-wrapper {
+    width: 100%; max-width: 440px;
+    padding: 24px;
+  }
+  .login-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .login-logo {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .login-logo .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: var(--primary);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 18px;
+  }
+  .login-logo h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; color: var(--text);
+  }
+  .login-logo p { color: var(--text-muted); font-size: 14px; }
+  .role-tabs {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 6px; margin-bottom: 24px;
+    background: var(--bg);
+    padding: 4px; border-radius: 10px;
+  }
+  .role-tab {
+    padding: 8px 4px;
+    border: none; background: transparent;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer; transition: all .2s;
+  }
+  .role-tab.active {
+    background: var(--white);
+    color: var(--primary);
+    box-shadow: 0 1px 8px rgba(0,0,0,0.1);
+  }
+  .form-group { margin-bottom: 18px; }
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--text);
+    transition: border-color .2s;
+    outline: none; background: var(--white);
+  }
+  input:focus { border-color: var(--primary); }
+  .btn-primary {
+    width: 100%; padding: 13px;
+    background: var(--primary);
+    color: white; border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+  .err-msg { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; text-align:center; }
+  .demo-hint { text-align:center; margin-top:18px; font-size:13px; color:var(--text-muted); }
+  .demo-hint strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand">
+        <div class="logo-icon">S</div>
+        <h1>SchooLama</h1>
+      </div>
+      <p>Sign in to your account</p>
+    </div>
+    <div class="role-tabs">
+      <button class="role-tab active" data-role="admin" onclick="setRole('admin')">Admin</button>
+      <button class="role-tab" data-role="teacher" onclick="setRole('teacher')">Teacher</button>
+      <button class="role-tab" data-role="student" onclick="setRole('student')">Student</button>
+      <button class="role-tab" data-role="parent" onclick="setRole('parent')">Parent</button>
+    </div>
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input id="username" placeholder="Enter username" autofocus>
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Enter password">
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+    <p class="err-msg" id="err-msg"></p>
+    <p class="demo-hint">Default admin: <strong>admin / admin123</strong></p>
+  </div>
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+const SUPABASE_URL = 'https://cllnpkysirxrjxwixqme.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloamNibGtpdXRybnN0b3hva2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MzQ5NjAsImV4cCI6MjA5NTAxMDk2MH0.wKXCGDwLHRDEP6su2Uft0xp8eEC32_WA0Ch32Ba4LhI'; // ← paste full anon key from Supabase dashboard
+
+// The anon key is visible in your screenshot, set it here:
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbG5wa3lzaXJ4cmp4d2l4cW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MzY0NTUsImV4cCI6MjA2MzQxMjQ1NX0...
+
+window.SUPABASE_URL = SUPABASE_URL;
+window.SUPABASE_ANON = SUPABASE_ANON;
+
+let selectedRole = 'admin';
+function setRole(r) {
+  selectedRole = r;
+  document.querySelectorAll('.role-tab').forEach(t => t.classList.toggle('active', t.dataset.role === r));
+}
+
+// If already logged in, redirect
+const saved = localStorage.getItem('school_user');
+if (saved) {
+  const u = JSON.parse(saved);
+  window.location.href = 'dashboard.html';
+}
+
+async function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('err-msg');
+  err.style.display = 'none';
+
+  if (!username || !password) {
+    err.textContent = 'Please enter username and password.';
+    err.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  // Simple admin check (extend with Supabase auth as needed)
+  if (selectedRole === 'admin' && username === 'admin' && password === 'admin123') {
+    localStorage.setItem('school_user', JSON.stringify({ username, role: 'admin', name: 'Admin User' }));
+    window.location.href = 'dashboard.html';
+    return;
+  }
+
+  // Try Supabase auth for other roles
+  try {
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    let table = selectedRole === 'teacher' ? 'Teacher' : selectedRole === 'student' ? 'Student' : 'Parent';
+    const { data, error } = await sb.from(table)
+      .select('id, name, username, surname')
+      .eq('username', username)
+      .single();
+
+    if (error || !data) throw new Error('Invalid credentials');
+    localStorage.setItem('school_user', JSON.stringify({ ...data, role: selectedRole }));
+    window.location.href = 'dashboard.html';
+  } catch(e) {
+    err.textContent = e.message || 'Login failed';
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+document.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+}));
+</script>
+</body>
+</html>
