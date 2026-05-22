@@ -593,16 +593,17 @@ function renderPage(page){
   const container = document.getElementById('pages-container');
   container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   switch(page){
-case 'teachers':     renderList('teachers','Teachers',...)
-case 'students':     renderList('students','Students',...)
-case 'parents':      renderList('parents','Parents',...)
-case 'subjects':     renderList('subjects','Subjects',...)
-case 'classes':      renderList('classes','Classes',...)
-case 'lessons':      renderList('lessons','Lessons',...)
-case 'exams':        renderList('exams','Exams',...)
-case 'assignments':  renderList('assignments','Assignments',...)
-case 'results':      renderList('results','Results',...)
-case 'attendance':   renderList('attendance','Attendance',...)
+    case 'dashboard':    renderDashboard(); break;
+    case 'teachers':     renderList('teachers','Teachers',['name','email','phone','subjects','classes','address']); break;
+    case 'students':     renderList('students','Students',['name','email','phone','classId','address','bloodType']); break;
+    case 'parents':      renderList('parents','Parents',['name','email','phone','address']); break;
+    case 'subjects':     renderList('subjects','Subjects',['name','teachers']); break;
+    case 'classes':      renderList('classes','Classes',['name','capacity','grade','supervisor']); break;
+    case 'lessons':      renderList('lessons','Lessons',['name','day','startTime','endTime','subject','class','teacher']); break;
+    case 'exams':        renderList('exams','Exams',['title','startTime','endTime','lesson']); break;
+    case 'assignments':  renderList('assignments','Assignments',['title','startDate','dueDate','lesson']); break;
+    case 'results':      renderList('results','Results',['score','studentId','assignmentId']); break;
+    case 'attendance':   renderList('attendance','Attendance',['date','present','studentId','lessonId']); break;
     case 'events':       renderEventsPage(); break;
     case 'announcements':renderAnnouncementsPage(); break;
   }
