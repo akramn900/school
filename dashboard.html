@@ -650,12 +650,12 @@ async function renderDashboard(){
     {data: events},
     {data: announcements},
   ] = await Promise.all([
-    sb.from('teachers').select('*',{count:'exact',head:true}),
-    sb.from('students').select('*',{count:'exact',head:true}),
-    sb.from('parents').select('*',{count:'exact',head:true}),
-    sb.from('subjects').select('*',{count:'exact',head:true}),
-    sb.from('events').select('*').order('startTime',{ascending:true}).limit(5),
-    sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
+sb.from('teachers').select('*',{count:'exact',head:true}),
+sb.from('students').select('*',{count:'exact',head:true}),
+sb.from('parents').select('*',{count:'exact',head:true}),
+sb.from('subjects').select('*',{count:'exact',head:true}),
+sb.from('events').select('*').order('startTime',{ascending:true}).limit(5),
+sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
   ]);
 
   // Attendance data for chart
