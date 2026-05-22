@@ -512,7 +512,7 @@ tr:hover td { background:#fafafa; }
 <script>
 // ══ CONFIG ═══════════════════════════════════════════════
 const SUPABASE_URL  = 'https://ihjcblkiutrnstoxokcv.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloamNibGtpdXRybnN0b3hva2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MzQ5NjAsImV4cCI6MjA5NTAxMDk2MH0.wKXCGDwLHRDEP6su2Uft0xp8eEC32_WA0Ch32Ba4LhI'; // ← REPLACE with your real anon key from screenshot
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloamNibGtpdXRybnN0b3hva2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MzQ5NjAsImV4cCI6MjA5NTAxMDk2MH0.wKXCGDwLHRDEP6su2Uft0xp8eEC32_WA0Ch32Ba4LhI';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
@@ -521,6 +521,7 @@ let sidebarCollapsed = false;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let chartInstances = {};
+let calendarEvents = [];
 
 // ══ AUTH CHECK ════════════════════════════════════════════
 (function(){
@@ -638,6 +639,55 @@ function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString(
 function fmtTime(d){ if(!d) return '—'; return new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
 const COLORS = ['#C3EBFA','#CFCEFF','#FAE27C','#bbf7d0','#fecaca','#e9d5ff'];
 
+const TABLE_LABELS = {
+  teachers: 'Teacher',
+  students: 'Student',
+  parents: 'Parent',
+  subjects: 'Subject',
+  classes: 'Class',
+  lessons: 'Lesson',
+  exams: 'Exam',
+  assignments: 'Assignment',
+  results: 'Result',
+  attendance: 'Attendance',
+  events: 'Event',
+  announcements: 'Announcement',
+};
+
+function tableLabel(table){ return TABLE_LABELS[table] || table; }
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;',
+  }[ch]));
+}
+function jsArg(value){
+  return `'${String(value ?? '')
+    .replace(/\\/g,'\\\\')
+    .replace(/'/g,"\\'")
+    .replace(/\r/g,'\\r')
+    .replace(/\n/g,'\\n')}'`;
+}
+function callHandler(fn, ...args){ return `${fn}(${args.map(jsArg).join(',')})`; }
+function isoDay(year, month, day){
+  const d = new Date(year, month, day);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function sameDay(value, dayIso){
+  if(!value) return false;
+  return String(value).slice(0,10) === dayIso;
+}
+function inputValue(value, type){
+  if(value === null || value === undefined) return '';
+  const raw = String(value);
+  if(type === 'date') return raw.slice(0,10);
+  if(type === 'datetime-local') return raw.slice(0,16);
+  return raw;
+}
+
 // ══ DASHBOARD ══════════════════════════════════════════════
 async function renderDashboard(){
   const c = document.getElementById('pages-container');
@@ -651,13 +701,14 @@ async function renderDashboard(){
     {data: events},
     {data: announcements},
   ] = await Promise.all([
-sb.from('teachers').select('*',{count:'exact',head:true}),
-sb.from('students').select('*',{count:'exact',head:true}),
-sb.from('parents').select('*',{count:'exact',head:true}),
-sb.from('subjects').select('*',{count:'exact',head:true}),
-sb.from('events').select('*').order('startTime',{ascending:true}).limit(5),
-sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
+    sb.from('teachers').select('*',{count:'exact',head:true}),
+    sb.from('students').select('*',{count:'exact',head:true}),
+    sb.from('parents').select('*',{count:'exact',head:true}),
+    sb.from('subjects').select('*',{count:'exact',head:true}),
+    sb.from('events').select('*').order('startTime',{ascending:true}).limit(5),
+    sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
   ]);
+  calendarEvents = events || [];
 
   // Attendance data for chart
   const today = new Date();
@@ -745,7 +796,7 @@ sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
   </div>`;
 
   // Build calendar
-  buildMiniCal();
+  buildMiniCal(calendarEvents);
 
   // Attendance Chart
   const attCtx = document.getElementById('att-chart').getContext('2d');
@@ -811,7 +862,7 @@ sb.from('announcements').select('*').order('date',{ascending:false}).limit(5),
 }
 
 // ══ MINI CALENDAR ══════════════════════════════════════════
-function buildMiniCal(){
+function buildMiniCal(events = calendarEvents){
   const el = document.getElementById('mini-cal');
   if(!el) return;
   const now = new Date();
@@ -832,8 +883,10 @@ function buildMiniCal(){
   // blank slots
   for(let i=0;i<startDay;i++) html+=`<div class="cal-day other-month"></div>`;
   for(let d=1;d<=last.getDate();d++){
+    const dateIso = isoDay(calYear, calMonth, d);
     const isToday = d===now.getDate()&&calMonth===now.getMonth()&&calYear===now.getFullYear();
-    html+=`<div class="cal-day${isToday?' today':''}">${d}</div>`;
+    const hasEvent = (events||[]).some(e=>sameDay(e.startTime, dateIso));
+    html+=`<div class="cal-day${isToday?' today':''}${hasEvent?' has-event':''}" role="button" tabindex="0" onclick="openDayEvents('${dateIso}')" onkeydown="if(event.key==='Enter'||event.key===' ') openDayEvents('${dateIso}')">${d}</div>`;
   }
   html+='</div>';
   el.innerHTML=html;
@@ -842,7 +895,36 @@ function calNav(dir){
   calMonth+=dir;
   if(calMonth<0){calMonth=11;calYear--;}
   if(calMonth>11){calMonth=0;calYear++;}
-  buildMiniCal();
+  buildMiniCal(calendarEvents);
+}
+
+function openDayEvents(dateIso){
+  const events = (calendarEvents||[]).filter(e=>sameDay(e.startTime, dateIso));
+  const title = fmtDate(dateIso + 'T00:00:00');
+  const addAction = currentUser.role==='admin'
+    ? `<button class="btn btn-primary btn-sm" onclick="closeModalDirect(); openAddModal('events')">+ Add Event</button>`
+    : '';
+  if(!events.length){
+    openModal(title, `
+      <div class="empty-state" style="padding:24px 10px">
+        <div class="empty-icon">📅</div>
+        <p>No events on this date</p>
+      </div>
+      <div class="modal-footer">${addAction}</div>`);
+    return;
+  }
+  openModal(title, `
+    <div class="event-list">
+      ${events.map((e,i)=>`
+        <div class="event-item">
+          <div class="event-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+          <div class="event-info">
+            <div class="event-title">${escapeHtml(e.title)}</div>
+            <div class="event-meta">${fmtTime(e.startTime)}${e.description?' · '+escapeHtml(e.description):''}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="modal-footer">${addAction}</div>`);
 }
 
 // ══ GENERIC LIST PAGE ══════════════════════════════════════
@@ -859,7 +941,7 @@ async function renderList(table, title, columns){
         <div class="page-title">${title}</div>
         <div class="page-subtitle">Manage all ${title.toLowerCase()}</div>
       </div>
-      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('${table}')">+ Add ${table}</button>`:''}
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="${callHandler('openAddModal', table)}">+ Add ${tableLabel(table)}</button>`:''}
     </div>
     <div class="table-card">
       <div class="table-header">
@@ -921,10 +1003,10 @@ async function fetchAndRenderTable(table, title){
             ${cols.slice(1).map(k=>`<td>${formatCell(row[k])}</td>`).join('')}
             <td>
               <div class="action-btns">
-                <button class="icon-btn icon-btn-view" onclick="viewRecord('${table}',${row.id})" title="View">👁</button>
+                <button class="icon-btn icon-btn-view" onclick="${callHandler('viewRecord', table, row.id)}" title="View">👁</button>
                 ${currentUser.role==='admin'?`
-                  <button class="icon-btn icon-btn-edit" onclick="editRecord('${table}',${row.id})" title="Edit">✏️</button>
-                  <button class="icon-btn icon-btn-del"  onclick="deleteRecord('${table}',${row.id})" title="Delete">🗑</button>
+                  <button class="icon-btn icon-btn-edit" onclick="${callHandler('editRecord', table, row.id)}" title="Edit">✏️</button>
+                  <button class="icon-btn icon-btn-del"  onclick="${callHandler('deleteRecord', table, row.id)}" title="Delete">🗑</button>
                 `:''}
               </div>
             </td>
@@ -966,7 +1048,7 @@ async function viewRecord(table, id){
       <div class="label">${k}</div>
       <div class="value">${formatCell(v)}</div>
     </div>`).join('');
-  openModal(`${table} Details`, `
+  openModal(`${tableLabel(table)} Details`, `
     <div class="profile-card" style="margin-bottom:20px">
       <div class="profile-avatar-big">${initials(data.name||data.title||String(id))}</div>
       <div class="profile-info">
@@ -980,7 +1062,7 @@ async function viewRecord(table, id){
 // ══ ADD RECORD ════════════════════════════════════════════
 async function openAddModal(table){
   const fields = getTableFields(table);
-  openModal(`Add ${table}`, buildForm(fields,'add',table));
+  openModal(`Add ${tableLabel(table)}`, buildForm(fields,'add',table));
 }
 
 // ══ EDIT RECORD ═══════════════════════════════════════════
@@ -988,7 +1070,7 @@ async function editRecord(table, id){
   const {data,error} = await sb.from(table).select('*').eq('id',id).single();
   if(error){ toast('Failed to load','error'); return; }
   const fields = getTableFields(table);
-  openModal(`Edit ${table}`, buildForm(fields,'edit',table,id,data));
+  openModal(`Edit ${tableLabel(table)}`, buildForm(fields,'edit',table,id,data));
 }
 
 // ══ DELETE RECORD ═════════════════════════════════════════
@@ -1003,18 +1085,18 @@ async function deleteRecord(table, id){
 // ══ TABLE FIELD DEFINITIONS ════════════════════════════════
 function getTableFields(table){
   const FIELDS = {
-    teachers:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
-    students:     [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
-    parents:      [{n:'username',l:'Username',t:'text',req:true},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'}],
+    teachers:     [{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
+    students:     [{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'},{n:'gradeId',l:'Grade ID',t:'text'},{n:'classId',l:'Class ID',t:'text'},{n:'parentId',l:'Parent ID',t:'text'}],
+    parents:      [{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'}],
     subjects:     [{n:'name',l:'Subject Name',t:'text',req:true}],
-    classes:       [{n:'name',l:'Class Name',t:'text',req:true},{n:'capacity',l:'Capacity',t:'number'},{n:'gradeId',l:'Grade ID',t:'number'}],
-    lessons:      [{n:'name',l:'Lesson Name',t:'text',req:true},{n:'day',l:'Day',t:'select',opts:['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
-    exams:        [{n:'title',l:'Title',t:'text',req:true},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
-    assignments:  [{n:'title',l:'Title',t:'text',req:true},{n:'startDate',l:'Start Date',t:'date'},{n:'dueDate',l:'Due Date',t:'date'}],
-    results:      [{n:'score',l:'Score',t:'number',req:true}],
-    attendances:  [{n:'date',l:'Date',t:'date',req:true},{n:'present',l:'Present',t:'select',opts:['true','false']}],
-    events:       [{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'}],
-    announcements:[{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'date',l:'Date',t:'date'}],
+    classes:      [{n:'name',l:'Class Name',t:'text',req:true},{n:'capacity',l:'Capacity',t:'number'},{n:'gradeId',l:'Grade ID',t:'text'},{n:'supervisorId',l:'Supervisor ID',t:'text'}],
+    lessons:      [{n:'name',l:'Lesson Name',t:'text',req:true},{n:'day',l:'Day',t:'select',opts:['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']},{n:'startTime',l:'Start Time',t:'text'},{n:'endTime',l:'End Time',t:'text'},{n:'subjectId',l:'Subject ID',t:'text'},{n:'classId',l:'Class ID',t:'text'},{n:'teacherId',l:'Teacher ID',t:'text'}],
+    exams:        [{n:'title',l:'Title',t:'text',req:true},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'},{n:'lessonId',l:'Lesson ID',t:'text'}],
+    assignments:  [{n:'title',l:'Title',t:'text',req:true},{n:'startDate',l:'Start Date',t:'date'},{n:'dueDate',l:'Due Date',t:'date'},{n:'lessonId',l:'Lesson ID',t:'text'}],
+    results:      [{n:'score',l:'Score',t:'number',req:true},{n:'examId',l:'Exam ID',t:'text'},{n:'assignmentId',l:'Assignment ID',t:'text'},{n:'studentId',l:'Student ID',t:'text'}],
+    attendance:   [{n:'date',l:'Date',t:'date',req:true},{n:'present',l:'Present',t:'select',opts:['true','false']},{n:'studentId',l:'Student ID',t:'text'},{n:'lessonId',l:'Lesson ID',t:'text'}],
+    events:       [{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'startTime',l:'Start Time',t:'datetime-local'},{n:'endTime',l:'End Time',t:'datetime-local'},{n:'classId',l:'Class ID',t:'text'}],
+    announcements:[{n:'title',l:'Title',t:'text',req:true},{n:'description',l:'Description',t:'textarea'},{n:'date',l:'Date',t:'date'},{n:'classId',l:'Class ID',t:'text'}],
   };
   return FIELDS[table]||[{n:'name',l:'Name',t:'text',req:true}];
 }
@@ -1027,7 +1109,7 @@ function buildForm(fields, mode, table, id='', data={}){
       ${fieldHTML(f1,data)} ${f2?fieldHTML(f2,data):'<div></div>'}
     </div>`);
   }
-  return `<form onsubmit="saveRecord(event,'${table}','${mode}',${id})">
+  return `<form onsubmit="${callHandler('saveRecord', 'event', table, mode, id).replace("'event'", 'event')}">
     ${pairs.join('')}
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeModalDirect()">Cancel</button>
@@ -1037,24 +1119,24 @@ function buildForm(fields, mode, table, id='', data={}){
 }
 
 function fieldHTML(f, data){
-  const val = data[f.n]||'';
+  const val = inputValue(data[f.n], f.t);
   if(f.t==='select') return `
     <div class="form-group">
       <label>${f.l}${f.req?' *':''}</label>
       <select name="${f.n}"${f.req?' required':''}>
         <option value="">Select…</option>
-        ${f.opts.map(o=>`<option value="${o}"${val==o?' selected':''}>${o}</option>`).join('')}
+        ${f.opts.map(o=>`<option value="${escapeHtml(o)}"${val==o?' selected':''}>${escapeHtml(o)}</option>`).join('')}
       </select>
     </div>`;
   if(f.t==='textarea') return `
     <div class="form-group">
       <label>${f.l}</label>
-      <textarea name="${f.n}">${val}</textarea>
+      <textarea name="${f.n}">${escapeHtml(val)}</textarea>
     </div>`;
   return `
     <div class="form-group">
       <label>${f.l}${f.req?' *':''}</label>
-      <input type="${f.t}" name="${f.n}" value="${val}"${f.req?' required':''}>
+      <input type="${f.t}" name="${f.n}" value="${escapeHtml(val)}"${f.req?' required':''}>
     </div>`;
 }
 
@@ -1063,7 +1145,12 @@ async function saveRecord(e, table, mode, id){
   const form = e.target;
   const formData = new FormData(form);
   const payload = {};
-  formData.forEach((v,k)=>{ if(v) payload[k]=v; });
+  const fields = getTableFields(table);
+  formData.forEach((v,k)=>{
+    if(v === '') return;
+    const field = fields.find(f=>f.n===k);
+    payload[k] = normalizeFieldValue(v, field?.t);
+  });
 
   let error;
   if(mode==='add'){
@@ -1077,10 +1164,18 @@ async function saveRecord(e, table, mode, id){
   navigate(currentPage);
 }
 
+function normalizeFieldValue(value, type){
+  if(type === 'number') return Number(value);
+  if(value === 'true') return true;
+  if(value === 'false') return false;
+  return value;
+}
+
 // ══ EVENTS PAGE ════════════════════════════════════════════
 async function renderEventsPage(){
   const c = document.getElementById('pages-container');
   const {data:events, error} = await sb.from('events').select('*').order('startTime',{ascending:true});
+  calendarEvents = events || [];
 
   c.innerHTML = `
     <div class="page-header">
@@ -1088,7 +1183,7 @@ async function renderEventsPage(){
         <div class="page-title">Events</div>
         <div class="page-subtitle">School calendar & events</div>
       </div>
-      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('events')">+ Add Event</button>`:''}
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="${callHandler('openAddModal', 'events')}">+ Add Event</button>`:''}
     </div>
     <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
       <!-- Full Calendar -->
@@ -1118,15 +1213,14 @@ function renderEvtCal(events){
   document.getElementById('evt-cal-title').textContent =
     first.toLocaleString('default',{month:'long'})+' '+calYear;
 
-  const evDays = new Set((events||[]).map(e=>new Date(e.startTime).getDate()));
-
   let html = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-day-name">${d}</div>`).join('');
   for(let i=0;i<startDay;i++) html+=`<div class="cal-day other-month"></div>`;
   const now = new Date();
   for(let d=1;d<=last.getDate();d++){
+    const dateIso = isoDay(calYear, calMonth, d);
     const isToday = d===now.getDate()&&calMonth===now.getMonth()&&calYear===now.getFullYear();
-    const hasEv = evDays.has(d);
-    html+=`<div class="cal-day${isToday?' today':''}${hasEv?' has-event':''}">${d}</div>`;
+    const hasEv = (events||[]).some(e=>sameDay(e.startTime, dateIso));
+    html+=`<div class="cal-day${isToday?' today':''}${hasEv?' has-event':''}" role="button" tabindex="0" onclick="openDayEvents('${dateIso}')" onkeydown="if(event.key==='Enter'||event.key===' ') openDayEvents('${dateIso}')">${d}</div>`;
   }
   document.getElementById('evt-cal-grid').innerHTML=html;
 }
@@ -1144,7 +1238,7 @@ function renderEvtList(events){
         <div class="event-meta">${fmtDate(e.startTime)}</div>
       </div>
       ${currentUser.role==='admin'?`
-        <button class="icon-btn icon-btn-del" onclick="deleteRecord('events',${e.id})" style="margin-left:auto">🗑</button>
+        <button class="icon-btn icon-btn-del" onclick="${callHandler('deleteRecord', 'events', e.id)}" style="margin-left:auto">🗑</button>
       `:''}
     </div>`).join('');
 }
@@ -1154,13 +1248,16 @@ function evtCalNav(dir){
   if(calMonth<0){calMonth=11;calYear--;}
   if(calMonth>11){calMonth=0;calYear++;}
   // re-fetch
-  sb.from('events').select('*').then(({data})=>renderEvtCal(data||[]));
+  sb.from('events').select('*').then(({data})=>{
+    calendarEvents = data || [];
+    renderEvtCal(calendarEvents);
+  });
 }
 
 // ══ ANNOUNCEMENTS PAGE ════════════════════════════════════
 async function renderAnnouncementsPage(){
   const c = document.getElementById('pages-container');
-  const {data, error} = await sb.from('Announcement').select('*').order('date',{ascending:false});
+  const {data, error} = await sb.from('announcements').select('*').order('date',{ascending:false});
 
   c.innerHTML = `
     <div class="page-header">
@@ -1168,7 +1265,7 @@ async function renderAnnouncementsPage(){
         <div class="page-title">Announcements</div>
         <div class="page-subtitle">School-wide communications</div>
       </div>
-      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddModal('Announcement')">+ Add Announcement</button>`:''}
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="${callHandler('openAddModal', 'announcements')}">+ Add Announcement</button>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:14px" id="ann-list"></div>`;
 
@@ -1187,8 +1284,8 @@ async function renderAnnouncementsPage(){
           <span style="font-size:12px;color:var(--text-muted)">${fmtDate(a.date)}</span>
           ${currentUser.role==='admin'?`
             <div class="action-btns">
-              <button class="icon-btn icon-btn-edit" onclick="editRecord('Announcement',${a.id})">✏️</button>
-              <button class="icon-btn icon-btn-del"  onclick="deleteRecord('Announcement',${a.id})">🗑</button>
+              <button class="icon-btn icon-btn-edit" onclick="${callHandler('editRecord', 'announcements', a.id)}">✏️</button>
+              <button class="icon-btn icon-btn-del"  onclick="${callHandler('deleteRecord', 'announcements', a.id)}">🗑</button>
             </div>`:''}
         </div>
       </div>
@@ -1203,14 +1300,14 @@ document.getElementById('global-search').addEventListener('keydown', async e=>{
   const c = document.getElementById('pages-container');
   c.innerHTML='<div class="loading"><div class="spinner"></div></div>';
   const [t,s,p] = await Promise.all([
-    sb.from('Teacher').select('id,name,email').ilike('name',`%${q}%`).limit(5),
-    sb.from('Student').select('id,name,email').ilike('name',`%${q}%`).limit(5),
-    sb.from('Parent').select('id,name,email').ilike('name',`%${q}%`).limit(5),
+    sb.from('teachers').select('id,name,email').ilike('name',`%${q}%`).limit(5),
+    sb.from('students').select('id,name,email').ilike('name',`%${q}%`).limit(5),
+    sb.from('parents').select('id,name,email').ilike('name',`%${q}%`).limit(5),
   ]);
   const groups = [
-    {label:'Teachers',data:t.data,table:'Teacher'},
-    {label:'Students',data:s.data,table:'Student'},
-    {label:'Parents',data:p.data,table:'Parent'},
+    {label:'Teachers',data:t.data,table:'teachers'},
+    {label:'Students',data:s.data,table:'students'},
+    {label:'Parents',data:p.data,table:'parents'},
   ].filter(g=>g.data?.length);
 
   currentPage='search';
@@ -1232,7 +1329,7 @@ document.getElementById('global-search').addEventListener('keydown', async e=>{
                       <div class="sub">${r.email||''}</div>
                     </div>
                   </div></td>
-                  <td><button class="btn btn-sm btn-ghost" onclick="viewRecord('${g.table}',${r.id})">View</button></td>
+                  <td><button class="btn btn-sm btn-ghost" onclick="${callHandler('viewRecord', g.table, r.id)}">View</button></td>
                 </tr>`).join('')}
             </tbody></table>
           </div>
