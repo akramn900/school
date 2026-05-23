@@ -229,8 +229,21 @@ const API = (() => {
   }
 
   function logout() {
-    clearAuth();
-    window.location.href = '../index.html';
+    // Delegate to clerkSignOut (clerk-auth.js) so the clerk_signing_out flag
+    // is set before school_user is removed — preventing clerk-auth.js from
+    // racing and redirecting back to the dashboard while sign-out is in progress.
+    if (typeof window.clerkSignOut === 'function') {
+      window.clerkSignOut();
+    } else {
+      // Fallback: set the guard flag first, then clear auth and redirect
+      localStorage.setItem('clerk_signing_out', '1');
+      clearAuth();
+      localStorage.removeItem('clerk_signing_out');
+      // Resolve correct path depth (pages/ subfolder → ../, root → ./)
+      const depth = window.location.pathname.split('/').filter(Boolean).length;
+      const prefix = depth > 1 ? '../'.repeat(depth - 1) : './';
+      window.location.replace(prefix + 'index.html');
+    }
   }
 
   function listResource(resource, params) { return get(resource, params); }
