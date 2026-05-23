@@ -1,35 +1,27 @@
 /**
- * clerk-auth.js  — v2
+ * clerk-auth.js — v3 (headless)
  * ─────────────────────────────────────────────────────────────────────────────
- * CORRECT SCRIPT ORDER in every protected page's <head>:
+ * Add BOTH script tags to the <head> of every protected page, in this order:
  *
- *   1.  <script data-clerk-publishable-key="pk_test_..."
- *           src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js">
- *       </script>
- *   2.  <script src="./js/clerk-auth.js"></script>   ← always AFTER clerk SDK
- *
- * Both scripts are regular (not async/defer) so they execute in order.
+ *   <script
+ *     data-clerk-publishable-key="pk_test_YWxlcnQtY293LTMyLmNsZXJrLmFjY291bnRzLmRldiQ"
+ *     src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+ *     type="text/javascript"
+ *   ></script>
+ *   <script src="./js/clerk-auth.js"></script>   ← root pages (dashboard.html)
+ *   <script src="../js/clerk-auth.js"></script>  ← pages/ subfolder
  * ─────────────────────────────────────────────────────────────────────────────
  */
-
 (function () {
   'use strict';
 
-  /* ── path helpers ─────────────────────────────────────────────────────── */
   function loginPath() {
-    const path  = window.location.pathname;          // e.g. /school/dashboard.html
-    const parts = path.split('/').filter(Boolean);   // ['school','dashboard.html']
-    // If we're in a sub-folder (pages/) go up two levels, else one
-    const depth = parts.length;                      // 2 for root, 3 for pages/
-    if (depth <= 1) return './index.html';           // root level
-    return '../'.repeat(depth - 1) + 'index.html';  // sub-level
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    return parts.length <= 1 ? './index.html' : '../'.repeat(parts.length - 1) + 'index.html';
   }
+  function redirectToLogin() { window.location.replace(loginPath()); }
 
-  function redirectToLogin() {
-    window.location.replace(loginPath());
-  }
-
-  /* ── read school_user set by index.html after sign-in ─────────────────── */
+  // Read school_user immediately (set by index.html after Clerk sign-in)
   const raw = localStorage.getItem('school_user');
   if (!raw) { redirectToLogin(); return; }
 
@@ -37,75 +29,53 @@
   try { schoolUser = JSON.parse(raw); }
   catch (e) { localStorage.removeItem('school_user'); redirectToLogin(); return; }
 
-  // Expose immediately so any inline scripts can read it
   window.schoolUser = schoolUser;
 
-  /* ── wait for DOM+Clerk, then validate session ─────────────────────────── */
-  window.addEventListener('DOMContentLoaded', function initClerkAuth() {
-
-    // Clerk SDK may not have injected `window.Clerk` yet if it was async.
-    // Poll briefly (max 5 s) then give up gracefully (don't block the page).
-    let attempts = 0;
-    const maxAttempts = 100;
-
-    const poll = setInterval(async function () {
-      attempts++;
-
+  // Validate Clerk session asynchronously — poll until Clerk SDK is ready
+  window.addEventListener('DOMContentLoaded', function () {
+    let tries = 0;
+    const timer = setInterval(async function () {
+      tries++;
       if (typeof window.Clerk === 'undefined') {
-        if (attempts >= maxAttempts) {
-          clearInterval(poll);
-          console.warn('clerk-auth: Clerk SDK not available after 5 s – running without session validation');
+        if (tries > 120) {                           // 6 s timeout → fail open
+          clearInterval(timer);
           document.dispatchEvent(new CustomEvent('clerkReady', { detail: schoolUser }));
         }
         return;
       }
+      clearInterval(timer);
 
-      clearInterval(poll);
-
-      try {
-        await window.Clerk.load();
-      } catch (err) {
-        console.warn('clerk-auth: Clerk.load() failed –', err.message);
+      try { await window.Clerk.load(); } catch (e) {
         document.dispatchEvent(new CustomEvent('clerkReady', { detail: schoolUser }));
         return;
       }
 
       if (!window.Clerk.user) {
-        // No active Clerk session – clear cache and go to login
         localStorage.removeItem('school_user');
         redirectToLogin();
         return;
       }
 
-      // Sync fresh data from Clerk into school_user
+      // Sync fresh profile data
       const u = window.Clerk.user;
-      schoolUser.name     = ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || schoolUser.name;
-      schoolUser.email    = u.emailAddresses?.[0]?.emailAddress || schoolUser.email;
+      schoolUser.name     = ((u.firstName||'') + ' ' + (u.lastName||'')).trim() || schoolUser.name;
+      schoolUser.email    = u.primaryEmailAddress?.emailAddress || schoolUser.email;
       schoolUser.imageUrl = u.imageUrl || schoolUser.imageUrl || '';
       localStorage.setItem('school_user', JSON.stringify(schoolUser));
       window.schoolUser = schoolUser;
 
-      // Watch for sign-out in another tab
-      window.Clerk.addListener(function ({ user }) {
-        if (!user) {
-          localStorage.removeItem('school_user');
-          redirectToLogin();
-        }
+      window.Clerk.addListener(({ user }) => {
+        if (!user) { localStorage.removeItem('school_user'); redirectToLogin(); }
       });
 
       document.dispatchEvent(new CustomEvent('clerkReady', { detail: schoolUser }));
     }, 50);
   });
 
-  /* ── global sign-out helper ────────────────────────────────────────────── */
+  // Global sign-out
   window.clerkSignOut = async function () {
-    try {
-      if (typeof window.Clerk !== 'undefined' && window.Clerk.signOut) {
-        await window.Clerk.signOut();
-      }
-    } catch (e) { /* ignore */ }
+    try { if (window.Clerk?.signOut) await window.Clerk.signOut(); } catch (_) {}
     localStorage.removeItem('school_user');
     redirectToLogin();
   };
-
 })();

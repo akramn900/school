@@ -8,12 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
 <!--
-  ════════════════════════════════════════════════════════════════
-  IMPORTANT: Replace the key below with your FULL publishable key.
-  Get it from: Clerk Dashboard → API Keys → Publishable key
-  It looks like: pk_test_AbCdEfGhIjKlMnOpQrStUvWxYz...  (long string)
-  The value in the screenshot was truncated — use the full one.
-  ════════════════════════════════════════════════════════════════
+  Clerk headless SDK — no "UI components" needed, we use our own form.
+  This is the correct build for vanilla HTML static sites.
 -->
 <script
   data-clerk-publishable-key="pk_test_YWxlcnQtY293LTMyLmNsZXJrLmFjY291bnRzLmRldiQ"
@@ -23,68 +19,182 @@
 
 <style>
 :root {
-  --sky:#C3EBFA; --sky-light:#EDF9FD; --purple:#CFCEFF; --purple-light:#F1F0FF;
-  --yellow:#FAE27C; --yellow-light:#FEFCE8; --bg:#F7F8FA; --white:#ffffff;
-  --text:#1a1a2e; --text-muted:#6b7280; --border:#e5e7eb;
-  --primary:#4361EE; --primary-dark:#3451db; --danger:#ef4444;
+  --bg:#F0F4FF; --white:#fff; --text:#1a1a2e; --text-muted:#6b7280;
+  --border:#dde3f0; --primary:#4361EE; --primary-dark:#3451db;
+  --purple-light:#F1F0FF; --sky-light:#EDF9FD;
+  --danger:#ef4444; --danger-light:#fef2f2;
+  --green:#22c55e; --green-light:#f0fdf4;
+  --radius:14px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;
-  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
   background-image:
-    radial-gradient(circle at 20% 20%,rgba(195,235,250,.4) 0%,transparent 50%),
-    radial-gradient(circle at 80% 80%,rgba(207,206,255,.4) 0%,transparent 50%);
+    radial-gradient(circle at 15% 15%,rgba(195,235,250,.5) 0%,transparent 45%),
+    radial-gradient(circle at 85% 85%,rgba(207,206,255,.5) 0%,transparent 45%),
+    radial-gradient(circle at 50% 50%,rgba(67,97,238,.04) 0%,transparent 70%);
 }
-.card{
-  background:var(--white);border-radius:20px;padding:36px 40px;
-  width:100%;max-width:440px;margin:0 20px;
-  box-shadow:0 4px 32px rgba(0,0,0,.09);border:1px solid var(--border);
-}
-.logo{text-align:center;margin-bottom:24px;}
-.logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;}
-.logo-icon{
-  width:40px;height:40px;background:var(--primary);border-radius:10px;
-  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;
-}
-.logo-text{font-family:'Playfair Display',serif;font-size:26px;color:var(--text);}
-.logo p{color:var(--text-muted);font-size:14px;}
 
-/* Role tabs */
+/* ── CARD ── */
+.card{
+  background:var(--white);border-radius:22px;padding:36px 40px 32px;
+  width:100%;max-width:420px;margin:0 20px;
+  box-shadow:0 8px 40px rgba(67,97,238,.12),0 1px 0 rgba(255,255,255,.8) inset;
+  border:1px solid rgba(221,227,240,.8);
+}
+
+/* ── LOGO ── */
+.logo{text-align:center;margin-bottom:22px;}
+.logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:5px;}
+.logo-icon{
+  width:42px;height:42px;background:linear-gradient(135deg,#4361EE,#7c3aed);
+  border-radius:11px;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:19px;
+  box-shadow:0 4px 12px rgba(67,97,238,.35);
+}
+.logo-text{font-family:'Playfair Display',serif;font-size:27px;color:var(--text);}
+.logo p{color:var(--text-muted);font-size:13.5px;}
+
+/* ── ROLE TABS ── */
 .tabs{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
-  background:var(--bg);padding:4px;border-radius:10px;margin-bottom:20px;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  background:#f3f5fb;padding:4px;border-radius:11px;margin-bottom:22px;
 }
 .tab{
   padding:8px 4px;border:none;background:transparent;border-radius:8px;
   font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
-  color:var(--text-muted);cursor:pointer;transition:all .2s;
+  color:var(--text-muted);cursor:pointer;transition:all .18s;
 }
-.tab.active{background:var(--white);color:var(--primary);box-shadow:0 1px 8px rgba(0,0,0,.1);}
-
-/* Clerk container */
-#clerk-mount{min-height:260px;display:flex;align-items:center;justify-content:center;}
-
-/* Spinner shown while Clerk loads */
-.spinner-wrap{text-align:center;color:var(--text-muted);font-size:13px;padding:20px 0;}
-.spin{
-  width:28px;height:28px;border:3px solid var(--border);
-  border-top-color:var(--primary);border-radius:50%;
-  animation:spin .7s linear infinite;margin:0 auto 10px;
+.tab.active{
+  background:var(--white);color:var(--primary);
+  box-shadow:0 1px 6px rgba(67,97,238,.18);font-weight:600;
 }
+
+/* ── FORM VIEWS ── */
+.view{display:none;}
+.view.active{display:block;}
+
+/* ── INPUTS ── */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.field input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);
+  outline:none;transition:border-color .18s, box-shadow .18s;
+  background:var(--white);
+}
+.field input:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(67,97,238,.12);
+}
+.field input::placeholder{color:#b0b7c3;}
+
+/* Password toggle */
+.pwd-wrap{position:relative;}
+.pwd-wrap input{padding-right:42px;}
+.pwd-toggle{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--text-muted);
+  font-size:17px;padding:2px;line-height:1;
+}
+
+/* ── SUBMIT BTN ── */
+.btn-submit{
+  width:100%;padding:12px;background:var(--primary);color:#fff;border:none;
+  border-radius:11px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:background .18s,transform .1s,box-shadow .18s;
+  box-shadow:0 4px 14px rgba(67,97,238,.35);margin-top:4px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-submit:hover{background:var(--primary-dark);box-shadow:0 6px 18px rgba(67,97,238,.4);}
+.btn-submit:active{transform:scale(.98);}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+/* ── SPINNER INSIDE BUTTON ── */
+.btn-spinner{
+  width:17px;height:17px;border:2.5px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .65s linear infinite;display:none;
+}
+.btn-submit.loading .btn-spinner{display:block;}
+.btn-submit.loading .btn-label{opacity:.7;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Error box */
-.err-box{
-  background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
-  padding:12px 16px;font-size:13px;color:var(--danger);line-height:1.6;
-  margin-top:8px;display:none;
+/* ── ALERTS ── */
+.alert{
+  border-radius:9px;padding:11px 14px;font-size:13px;line-height:1.55;
+  margin-bottom:14px;display:none;
+}
+.alert.error{background:var(--danger-light);color:var(--danger);border:1px solid #fecaca;}
+.alert.success{background:var(--green-light);color:#166534;border:1px solid #bbf7d0;}
+.alert.show{display:block;}
+
+/* ── OTP INPUTS ── */
+.otp-row{display:flex;gap:8px;justify-content:center;margin-bottom:14px;}
+.otp-row input{
+  width:44px;height:50px;text-align:center;font-size:20px;font-weight:700;
+  border:1.5px solid var(--border);border-radius:10px;outline:none;
+  font-family:'DM Sans',sans-serif;transition:border-color .18s,box-shadow .18s;
+}
+.otp-row input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(67,97,238,.12);}
+
+/* ── BACK LINK ── */
+.back-link{
+  text-align:center;margin-top:14px;font-size:13px;color:var(--text-muted);
+}
+.back-link a{color:var(--primary);text-decoration:none;font-weight:600;cursor:pointer;}
+.back-link a:hover{text-decoration:underline;}
+
+/* ── FORGOT / MAGIC LINK TOGGLE ── */
+.form-footer{
+  text-align:right;margin-top:-8px;margin-bottom:14px;
+  font-size:12.5px;
+}
+.form-footer a{color:var(--primary);text-decoration:none;cursor:pointer;font-weight:500;}
+.form-footer a:hover{text-decoration:underline;}
+
+/* ── DIVIDER ── */
+.divider{
+  display:flex;align-items:center;gap:10px;
+  color:var(--text-muted);font-size:12px;margin:16px 0;
+}
+.divider::before,.divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+/* ── GOOGLE BUTTON ── */
+.btn-google{
+  width:100%;padding:10px 14px;background:var(--white);color:var(--text);
+  border:1.5px solid var(--border);border-radius:11px;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .18s;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn-google:hover{border-color:#9da8c4;background:#f9faff;}
+
+/* Page loading overlay */
+#page-loader{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;transition:opacity .3s;
+}
+#page-loader.hidden{opacity:0;pointer-events:none;}
+.page-spin{
+  width:36px;height:36px;border:3px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;
+  animation:spin .7s linear infinite;
 }
 </style>
 </head>
 <body>
 
-<div class="card">
+<!-- Full-page loader while Clerk initialises -->
+<div id="page-loader"><div class="page-spin"></div></div>
+
+<div class="card" id="main-card" style="display:none;">
+
+  <!-- LOGO -->
   <div class="logo">
     <div class="logo-row">
       <div class="logo-icon">S</div>
@@ -93,7 +203,7 @@ body{
     <p>Sign in to your account</p>
   </div>
 
-  <!-- Role selector — saved to localStorage, picked up by dashboard -->
+  <!-- ROLE TABS -->
   <div class="tabs" id="role-tabs">
     <button class="tab active" data-role="admin"   onclick="setRole('admin')">Admin</button>
     <button class="tab"        data-role="teacher" onclick="setRole('teacher')">Teacher</button>
@@ -101,19 +211,84 @@ body{
     <button class="tab"        data-role="parent"  onclick="setRole('parent')">Parent</button>
   </div>
 
-  <!-- Clerk mounts its sign-in widget here -->
-  <div id="clerk-mount">
-    <div class="spinner-wrap">
-      <div class="spin"></div>
-      Loading secure sign-in…
+  <!-- ══ VIEW 1: Email + Password ══════════════════════════════════════════ -->
+  <div class="view active" id="view-password">
+    <div class="alert error" id="pw-error"></div>
+
+    <div class="field">
+      <label for="pw-email">Email address</label>
+      <input type="email" id="pw-email" placeholder="you@school.com" autocomplete="email">
     </div>
+    <div class="field">
+      <label for="pw-pass">Password</label>
+      <div class="pwd-wrap">
+        <input type="password" id="pw-pass" placeholder="Enter your password" autocomplete="current-password">
+        <button class="pwd-toggle" type="button" onclick="togglePwd('pw-pass',this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <div class="form-footer">
+      <a onclick="showView('view-magic')">Sign in with magic link instead</a>
+    </div>
+    <button class="btn-submit" id="pw-btn" onclick="signInWithPassword()">
+      <div class="btn-spinner"></div>
+      <span class="btn-label">Sign In</span>
+    </button>
+
+    <div class="divider">or</div>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
+        <path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.7 7.4 6.3 14.7z"/>
+        <path fill="#FBBC05" d="M24 46c5.9 0 11-2 14.7-5.4l-6.8-5.6C29.8 36.6 27 37.5 24 37.5c-6.1 0-11.3-4.1-13.1-9.7l-7 5.4C7.5 41 15.2 46 24 46z"/>
+        <path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.7 2.8-2.5 5.1-5 6.6l6.8 5.6c4-3.7 6.4-9.2 6.4-15.7 0-1.3-.2-2.7-.5-4z"/>
+      </svg>
+      Continue with Google
+    </button>
   </div>
 
-  <div class="err-box" id="err-box"></div>
-</div>
+  <!-- ══ VIEW 2: Magic Link ════════════════════════════════════════════════ -->
+  <div class="view" id="view-magic">
+    <div class="alert error"   id="ml-error"></div>
+    <div class="alert success" id="ml-success"></div>
+
+    <div class="field">
+      <label for="ml-email">Email address</label>
+      <input type="email" id="ml-email" placeholder="you@school.com" autocomplete="email">
+    </div>
+    <button class="btn-submit" id="ml-btn" onclick="sendMagicLink()">
+      <div class="btn-spinner"></div>
+      <span class="btn-label">Send Magic Link</span>
+    </button>
+    <div class="back-link"><a onclick="showView('view-password')">← Back to password sign in</a></div>
+  </div>
+
+  <!-- ══ VIEW 3: OTP / 2FA code ════════════════════════════════════════════ -->
+  <div class="view" id="view-otp">
+    <div class="alert error" id="otp-error"></div>
+    <p style="font-size:13.5px;color:var(--text-muted);text-align:center;margin-bottom:18px;">
+      Enter the 6-digit code sent to your email
+    </p>
+    <div class="otp-row" id="otp-inputs">
+      <input type="text" maxlength="1" inputmode="numeric" oninput="otpNext(this,0)">
+      <input type="text" maxlength="1" inputmode="numeric" oninput="otpNext(this,1)">
+      <input type="text" maxlength="1" inputmode="numeric" oninput="otpNext(this,2)">
+      <input type="text" maxlength="1" inputmode="numeric" oninput="otpNext(this,3)">
+      <input type="text" maxlength="1" inputmode="numeric" oninput="otpNext(this,4)">
+      <input type="text" maxlength="1" inputmode="numeric" oninput="otpNext(this,5)">
+    </div>
+    <button class="btn-submit" id="otp-btn" onclick="verifyOtp()">
+      <div class="btn-spinner"></div>
+      <span class="btn-label">Verify Code</span>
+    </button>
+    <div class="back-link"><a onclick="showView('view-password')">← Start over</a></div>
+  </div>
+
+</div><!-- /card -->
 
 <script>
-// ── Role selection ────────────────────────────────────────────────────────────
+'use strict';
+
+// ── Role ──────────────────────────────────────────────────────────────────────
 let selectedRole = localStorage.getItem('school_pending_role') || 'admin';
 document.querySelectorAll('.tab').forEach(t =>
   t.classList.toggle('active', t.dataset.role === selectedRole));
@@ -125,85 +300,229 @@ function setRole(r) {
     t.classList.toggle('active', t.dataset.role === r));
 }
 
-// ── Redirect path helper ──────────────────────────────────────────────────────
-function dashboardPath() {
+// ── View switching ────────────────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Password visibility ───────────────────────────────────────────────────────
+function togglePwd(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+// ── OTP input auto-advance ────────────────────────────────────────────────────
+function otpNext(el, idx) {
+  el.value = el.value.replace(/\D/g,'');
+  if (el.value && idx < 5) {
+    document.querySelectorAll('#otp-inputs input')[idx + 1].focus();
+  }
+}
+
+// ── Alert helpers ─────────────────────────────────────────────────────────────
+function showAlert(id, msg, type='error') {
+  const el = document.getElementById(id);
+  el.textContent = (type === 'error' ? '⚠️ ' : '✅ ') + msg;
+  el.className = 'alert ' + type + ' show';
+}
+function hideAlert(id) {
+  const el = document.getElementById(id);
+  if (el) { el.className = 'alert'; el.textContent = ''; }
+}
+
+// ── Button loading state ──────────────────────────────────────────────────────
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  btn.classList.toggle('loading', on);
+  btn.disabled = on;
+}
+
+// ── Friendly error message ────────────────────────────────────────────────────
+function friendlyError(err) {
+  const msg = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || err?.message || String(err);
+  if (msg.includes('password')) return 'Incorrect password. Please try again.';
+  if (msg.includes('identifier') || msg.includes('email')) return 'Email address not found.';
+  if (msg.includes('code')) return 'Invalid or expired code. Please try again.';
+  if (msg.includes('factor')) return 'A verification code has been sent to your email.';
+  return msg;
+}
+
+// ── Save user & go to dashboard ───────────────────────────────────────────────
+function finishLogin(clerkUser) {
+  const role = selectedRole || localStorage.getItem('school_pending_role') || 'admin';
+  localStorage.setItem('school_user', JSON.stringify({
+    id:       clerkUser.id,
+    username: clerkUser.username || clerkUser.primaryEmailAddress?.emailAddress || clerkUser.id,
+    name:     ((clerkUser.firstName||'') + ' ' + (clerkUser.lastName||'')).trim(),
+    email:    clerkUser.primaryEmailAddress?.emailAddress || '',
+    imageUrl: clerkUser.imageUrl || '',
+    role,
+    clerkId:  clerkUser.id,
+  }));
+  localStorage.removeItem('school_pending_role');
   const path = window.location.pathname;
   const dir  = path.substring(0, path.lastIndexOf('/') + 1);
-  return dir + 'dashboard.html';
+  window.location.replace(dir + 'dashboard.html');
 }
 
-// ── Show error helper ─────────────────────────────────────────────────────────
-function showError(msg) {
-  const box = document.getElementById('err-box');
-  box.textContent = '⚠️ ' + msg;
-  box.style.display = 'block';
-}
+// ── Active sign-in resource (needed for MFA/OTP step) ────────────────────────
+let activeSignIn = null;
 
-// ── If already signed in, skip straight to dashboard ─────────────────────────
-const saved = localStorage.getItem('school_user');
-if (saved) {
-  try { JSON.parse(saved); window.location.replace(dashboardPath()); }
-  catch(e) { localStorage.removeItem('school_user'); }
-}
+// ── SIGN IN WITH PASSWORD ─────────────────────────────────────────────────────
+async function signInWithPassword() {
+  hideAlert('pw-error');
+  const email = document.getElementById('pw-email').value.trim();
+  const pass  = document.getElementById('pw-pass').value;
+  if (!email) { showAlert('pw-error','Please enter your email.'); return; }
+  if (!pass)  { showAlert('pw-error','Please enter your password.'); return; }
 
-// ── Init Clerk ────────────────────────────────────────────────────────────────
-(async function initClerk() {
+  setLoading('pw-btn', true);
   try {
-    // Clerk SDK is loaded synchronously above, so window.Clerk is available now
+    const si = await window.Clerk.client.signIn.create({
+      identifier: email,
+      password: pass,
+    });
+
+    if (si.status === 'complete') {
+      await window.Clerk.setActive({ session: si.createdSessionId });
+      finishLogin(window.Clerk.user);
+    } else if (si.status === 'needs_second_factor' || si.status === 'needs_first_factor') {
+      // MFA / email code required
+      activeSignIn = si;
+      showView('view-otp');
+      document.querySelectorAll('#otp-inputs input')[0].focus();
+    } else {
+      showAlert('pw-error', 'Unexpected sign-in status: ' + si.status);
+    }
+  } catch (err) {
+    showAlert('pw-error', friendlyError(err));
+  } finally {
+    setLoading('pw-btn', false);
+  }
+}
+
+// Enter key on password field
+document.getElementById('pw-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') signInWithPassword();
+});
+document.getElementById('pw-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('pw-pass').focus();
+});
+
+// ── SEND MAGIC LINK ───────────────────────────────────────────────────────────
+async function sendMagicLink() {
+  hideAlert('ml-error'); hideAlert('ml-success');
+  const email = document.getElementById('ml-email').value.trim();
+  if (!email) { showAlert('ml-error','Please enter your email.'); return; }
+
+  setLoading('ml-btn', true);
+  try {
+    const si = await window.Clerk.client.signIn.create({
+      strategy: 'email_link',
+      identifier: email,
+      redirectUrl: window.location.href,
+    });
+
+    const factor = si.supportedFirstFactors?.find(f => f.strategy === 'email_link');
+    if (factor) {
+      activeSignIn = si;
+      await si.prepareFirstFactor({
+        strategy: 'email_link',
+        emailAddressId: factor.emailAddressId,
+        redirectUrl: window.location.href,
+      });
+      showAlert('ml-success', 'Magic link sent! Check your inbox and click the link to sign in.', 'success');
+    } else {
+      showAlert('ml-error', 'Magic link not supported for this account. Try password sign-in.');
+    }
+  } catch (err) {
+    showAlert('ml-error', friendlyError(err));
+  } finally {
+    setLoading('ml-btn', false);
+  }
+}
+
+// ── VERIFY OTP CODE ───────────────────────────────────────────────────────────
+async function verifyOtp() {
+  hideAlert('otp-error');
+  const inputs = document.querySelectorAll('#otp-inputs input');
+  const code   = [...inputs].map(i => i.value).join('');
+  if (code.length < 6) { showAlert('otp-error','Enter all 6 digits.'); return; }
+  if (!activeSignIn)    { showView('view-password'); return; }
+
+  setLoading('otp-btn', true);
+  try {
+    const result = await activeSignIn.attemptSecondFactor
+      ? activeSignIn.attemptSecondFactor({ strategy: 'phone_code', code })
+      : await activeSignIn.attemptFirstFactor({ strategy: 'email_code', code });
+
+    if (result.status === 'complete') {
+      await window.Clerk.setActive({ session: result.createdSessionId });
+      finishLogin(window.Clerk.user);
+    } else {
+      showAlert('otp-error', 'Verification failed. Status: ' + result.status);
+    }
+  } catch (err) {
+    showAlert('otp-error', friendlyError(err));
+  } finally {
+    setLoading('otp-btn', false);
+  }
+}
+
+// ── GOOGLE SIGN IN ────────────────────────────────────────────────────────────
+async function signInWithGoogle() {
+  try {
+    await window.Clerk.client.signIn.authenticateWithRedirect({
+      strategy:       'oauth_google',
+      redirectUrl:    window.location.origin + '/sso-callback',
+      redirectUrlComplete: window.location.href,
+    });
+  } catch (err) {
+    showAlert('pw-error', 'Google sign-in failed: ' + friendlyError(err));
+  }
+}
+
+// ── INIT CLERK ────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  const loader = document.getElementById('page-loader');
+  const card   = document.getElementById('main-card');
+
+  // If already logged in from a previous session skip to dashboard
+  const saved = localStorage.getItem('school_user');
+
+  try {
     if (typeof window.Clerk === 'undefined') {
-      showError('Clerk SDK failed to load. Check your internet connection and try again.');
-      document.getElementById('clerk-mount').innerHTML = '';
-      return;
+      throw new Error('Clerk SDK failed to load. Check your internet connection.');
     }
 
     await window.Clerk.load();
 
-    // Already signed in from another tab/session
+    // Handle magic link return
+    if (window.Clerk.client?.signIn?.status === 'complete') {
+      await window.Clerk.setActive({ session: window.Clerk.client.signIn.createdSessionId });
+    }
+
     if (window.Clerk.user) {
-      saveUserAndRedirect(window.Clerk.user);
+      // Already signed in
+      finishLogin(window.Clerk.user);
       return;
     }
 
-    // Mount the built-in SignIn widget
-    const mountEl = document.getElementById('clerk-mount');
-    mountEl.innerHTML = ''; // remove spinner
-    window.Clerk.mountSignIn(mountEl, {
-      appearance: {
-        variables: {
-          colorPrimary:  '#4361EE',
-          borderRadius:  '10px',
-          fontFamily:    "'DM Sans', sans-serif",
-          colorBackground: '#ffffff',
-        },
-        layout: { socialButtonsVariant: 'iconButton' },
-      },
-    });
-
-    // Listen for completed sign-in
-    window.Clerk.addListener(({ user }) => {
-      if (user) saveUserAndRedirect(user);
-    });
+    // If we had a saved user but Clerk session expired, clear it
+    if (saved) localStorage.removeItem('school_user');
 
   } catch (err) {
-    showError('Could not initialize authentication: ' + err.message);
-    document.getElementById('clerk-mount').innerHTML = '';
+    // Non-fatal: show the form anyway so the user can still try
+    console.warn('Clerk init warning:', err.message);
   }
-})();
 
-function saveUserAndRedirect(user) {
-  const role = selectedRole || localStorage.getItem('school_pending_role') || 'admin';
-  localStorage.setItem('school_user', JSON.stringify({
-    id:       user.id,
-    username: user.username || user.emailAddresses?.[0]?.emailAddress || user.id,
-    name:     ((user.firstName || '') + ' ' + (user.lastName || '')).trim(),
-    email:    user.emailAddresses?.[0]?.emailAddress || '',
-    imageUrl: user.imageUrl || '',
-    role:     role,
-    clerkId:  user.id,
-  }));
-  localStorage.removeItem('school_pending_role');
-  window.location.replace(dashboardPath());
-}
+  // Show the login card
+  loader.classList.add('hidden');
+  card.style.display = 'block';
+  document.getElementById('pw-email').focus();
+});
 </script>
 </body>
 </html>
