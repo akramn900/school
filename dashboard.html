@@ -1,29 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SchooLama</title>
-
-  <!-- ① CLERK FIRST — no async, no defer -->
-  <script
-    data-clerk-publishable-key="pk_test_YWxlcnQtY293LTMyLmNsZXJrLmFjY291bnRzLmRldiQ"
-    src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
-    type="text/javascript"
-  ></script>
-
-  <!-- ② CLERK AUTH GUARD — always after Clerk SDK -->
-  <script src="./js/clerk-auth.js"></script>
-
-  <!-- ③ then your other scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SchooLama – Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <!-- Clerk SDK — load first, no async/defer -->
+  <script
+    data-clerk-publishable-key="pk_test_YWxlcnQtY293LTMyLmNsZXJrLmFjY291bnRzLmRldiQ"
+    src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    type="text/javascript"
+  ></script>
+  <!-- Auth guard — always after Clerk SDK -->
+  <script src="./js/clerk-auth.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -617,37 +607,25 @@ const NAV = [
 // ══ BUILD SIDEBAR ═════════════════════════════════════════
 function buildSidebar(){
   const nav = document.getElementById('sidebar-nav');
-nav.innerHTML += `
-          <a class="nav-item${item.id===currentPage?' active':''}" onclick="navigate('${item.id}')">
-            <span class="nav-icon">${item.icon}</span>
-            <span class="nav-label">${item.label}</span>
-          </a>`;
-      }
-    });
-
-    // Communications link
-nav.innerHTML += `
-          <a class="nav-item${item.id===currentPage?' active':''}" onclick="navigate('${item.id}')">
-            <span class="nav-icon">${item.icon}</span>
-            <span class="nav-label">${item.label}</span>
-          </a>`;
-      }
-    });
-  // ── Communications link ──────────────────────────────────
-    nav.innerHTML += `
-      <div class="nav-section-label" style="font-size:10px;font-weight:600;
-        color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;
-        padding:12px 16px 4px;">COMMUNICATION</div>
-      <a class="nav-item" href="./pages/communications.html"
-         style="display:flex;align-items:center;gap:10px;padding:9px 16px;
-         text-decoration:none;color:inherit;border-radius:8px;margin:1px 8px;transition:.15s;"
-         onmouseover="this.style.background='rgba(67,97,238,.08)'"
-         onmouseout="this.style.background='transparent'">
-        <span class="nav-icon">💬</span>
-        <span class="nav-label">Communications</span>
-      </a>`;
+  nav.innerHTML = '';
+  NAV.forEach(item => {
+    if (item.section) {
+      nav.innerHTML += `<div class="nav-section-label">${item.section}</div>`;
+    } else {
+      nav.innerHTML += `
+        <a class="nav-item${item.id===currentPage?' active':''}" onclick="navigate('${item.id}')">
+          <span class="nav-icon">${item.icon}</span>
+          <span class="nav-label">${item.label}</span>
+        </a>`;
+    }
+  });
+  nav.innerHTML += `
+    <div class="nav-section-label">COMMUNICATION</div>
+    <a class="nav-item" href="./pages/communications.html">
+      <span class="nav-icon">💬</span>
+      <span class="nav-label">Communications</span>
+    </a>`;
 }
-
 function toggleSidebar(){
   sidebarCollapsed = !sidebarCollapsed;
   document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed);
