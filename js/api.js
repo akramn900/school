@@ -229,20 +229,26 @@ const API = (() => {
   }
 
   function logout() {
-    // Delegate to clerkSignOut (clerk-auth.js) so the clerk_signing_out flag
-    // is set before school_user is removed — preventing clerk-auth.js from
-    // racing and redirecting back to the dashboard while sign-out is in progress.
-    if (typeof window.clerkSignOut === 'function') {
-      window.clerkSignOut();
+    // Set the guard flag FIRST so clerk-auth.js won't race and redirect back
+    localStorage.setItem('clerk_signing_out', '1');
+    clearAuth();
+
+    // Resolve correct path to index.html regardless of subfolder depth
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const prefix = parts.length > 1 ? '../'.repeat(parts.length - 1) : './';
+    const loginUrl = prefix + 'index.html';
+
+    // Always call Clerk.signOut() — this destroys the Clerk session cookie.
+    // Without this, index.html sees window.Clerk.user is still set and
+    // immediately redirects back to the dashboard.
+    if (typeof window.Clerk !== 'undefined' && window.Clerk.signOut) {
+      window.Clerk.signOut().catch(() => {}).finally(() => {
+        localStorage.removeItem('clerk_signing_out');
+        window.location.replace(loginUrl);
+      });
     } else {
-      // Fallback: set the guard flag first, then clear auth and redirect
-      localStorage.setItem('clerk_signing_out', '1');
-      clearAuth();
       localStorage.removeItem('clerk_signing_out');
-      // Resolve correct path depth (pages/ subfolder → ../, root → ./)
-      const depth = window.location.pathname.split('/').filter(Boolean).length;
-      const prefix = depth > 1 ? '../'.repeat(depth - 1) : './';
-      window.location.replace(prefix + 'index.html');
+      window.location.replace(loginUrl);
     }
   }
 
