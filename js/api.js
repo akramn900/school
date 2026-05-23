@@ -229,27 +229,13 @@ const API = (() => {
   }
 
   function logout() {
-    // Set the guard flag FIRST so clerk-auth.js won't race and redirect back
-    localStorage.setItem('clerk_signing_out', '1');
-    clearAuth();
-
-    // Resolve correct path to index.html regardless of subfolder depth
+    // Navigate to logout.html (at project root) which loads the Clerk SDK,
+    // calls Clerk.signOut() to destroy the session cookie, clears localStorage,
+    // then redirects to index.html.
+    // This works from any depth (root pages or pages/ subfolder).
     const parts = window.location.pathname.split('/').filter(Boolean);
     const prefix = parts.length > 1 ? '../'.repeat(parts.length - 1) : './';
-    const loginUrl = prefix + 'index.html';
-
-    // Always call Clerk.signOut() — this destroys the Clerk session cookie.
-    // Without this, index.html sees window.Clerk.user is still set and
-    // immediately redirects back to the dashboard.
-    if (typeof window.Clerk !== 'undefined' && window.Clerk.signOut) {
-      window.Clerk.signOut().catch(() => {}).finally(() => {
-        localStorage.removeItem('clerk_signing_out');
-        window.location.replace(loginUrl);
-      });
-    } else {
-      localStorage.removeItem('clerk_signing_out');
-      window.location.replace(loginUrl);
-    }
+    window.location.href = prefix + 'logout.html';
   }
 
   function listResource(resource, params) { return get(resource, params); }
