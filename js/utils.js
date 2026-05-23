@@ -173,14 +173,51 @@ function renderUserBadge(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
+  const initial = (user.name || user.username || 'U')[0].toUpperCase();
+  const avatarHtml = user.imageUrl
+    ? `<img src="${user.imageUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+    : initial;
+
   el.innerHTML = `
     <button class="nav-circle" title="Messages"><img src="../assets/lama/message.png" alt=""></button>
     <button class="nav-circle nav-circle-badged" title="Announcements"><img src="../assets/lama/announcement.png" alt=""><span>1</span></button>
-    <div class="nav-user-copy">
-      <strong>${user.username}</strong>
-      <small>${user.role}</small>
-    </div>
-    <button class="nav-avatar" title="Logout" onclick="API.logout()"><img src="../assets/lama/avatar.png" alt=""></button>`;
+    <div style="position:relative;">
+      <button class="nav-avatar" title="Profile" onclick="toggleSubProfileMenu(event)" style="width:36px;height:36px;border-radius:50%;background:var(--purple,#4361EE);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;">${avatarHtml}</button>
+      <div id="sub-profile-menu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:230px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:999;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:#4361EE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;overflow:hidden;">${avatarHtml}</div>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#1a1a2e;">${user.name || user.username}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:1px;">${user.email || ''}</div>
+            <div style="display:inline-block;margin-top:3px;font-size:10px;font-weight:600;background:#C3EBFA;color:#4361EE;border-radius:6px;padding:1px 7px;text-transform:uppercase;">${user.role || ''}</div>
+          </div>
+        </div>
+        <div style="height:1px;background:#e5e7eb;"></div>
+        <button onclick="window.location.href='profile.html'" style="width:100%;text-align:left;background:none;border:none;padding:10px 16px;font-size:13px;color:#1a1a2e;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit;">👤 My Profile</button>
+        <button onclick="window.location.href='settings.html'" style="width:100%;text-align:left;background:none;border:none;padding:10px 16px;font-size:13px;color:#1a1a2e;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit;">⚙️ Settings</button>
+        <div style="height:1px;background:#e5e7eb;"></div>
+        <button onclick="API.logout()" style="width:100%;text-align:left;background:none;border:none;padding:10px 16px;font-size:13px;color:#ef4444;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit;">🚪 Sign out</button>
+      </div>
+    </div>`;
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function closeMenu(e) {
+      const menu = document.getElementById('sub-profile-menu');
+      if (menu && !menu.parentElement.contains(e.target)) {
+        menu.style.display = 'none';
+        document.removeEventListener('click', closeMenu);
+      }
+    });
+  }, 0);
+}
+
+function toggleSubProfileMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('sub-profile-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
 }
 
 function getDashboardPath(role) {
