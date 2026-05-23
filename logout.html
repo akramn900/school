@@ -17,14 +17,17 @@
   <p>Signing out…</p>
   <script>
     (async function () {
-      // Clear all local auth data first
+      // Clear all local auth data
       localStorage.removeItem('school_user');
       localStorage.removeItem('school_token');
       localStorage.removeItem('school_pending_role');
       localStorage.removeItem('clerk_signing_out');
 
+      // Set a sessionStorage flag so index.html knows to force-signout
+      // (survives the navigation but not the Clerk SDK's own cache)
+      sessionStorage.setItem('school_logging_out', '1');
+
       try {
-        // Wait for Clerk SDK to be ready (it loads synchronously above, but load() is async)
         if (typeof window.Clerk !== 'undefined') {
           await window.Clerk.load();
           if (window.Clerk.user) {
@@ -32,11 +35,11 @@
           }
         }
       } catch (e) {
-        // If Clerk fails for any reason, proceed to login anyway
         console.warn('Clerk signOut error:', e);
       }
 
-      window.location.replace('./index.html');
+      // ?logout=1 tells index.html to sign out again if Clerk session persists
+      window.location.replace('./index.html?logout=1');
     })();
   </script>
 </body>
