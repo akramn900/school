@@ -571,19 +571,13 @@ let calendarEvents = [];
 })();
 
 function doLogout(){
-  // Set flag FIRST so clerk-auth.js doesn't bounce user back
-  localStorage.setItem('clerk_signing_out', '1');
-  localStorage.removeItem('school_user');
-  window.schoolUser = null;
-  if (typeof window.Clerk !== 'undefined' && window.Clerk.signOut) {
-    window.Clerk.signOut().then(() => {
-      localStorage.removeItem('clerk_signing_out');
-      window.location.replace('./index.html');
-    }).catch(() => {
-      localStorage.removeItem('clerk_signing_out');
-      window.location.replace('./index.html');
-    });
+  // Use clerkSignOut from clerk-auth.js which handles the signing-out flag correctly
+  if (typeof window.clerkSignOut === 'function') {
+    window.clerkSignOut();
   } else {
+    localStorage.setItem('clerk_signing_out', '1');
+    localStorage.removeItem('school_user');
+    window.schoolUser = null;
     localStorage.removeItem('clerk_signing_out');
     window.location.replace('./index.html');
   }
@@ -632,7 +626,7 @@ function buildSidebar(){
   });
   nav.innerHTML += `
     <div class="nav-section-label">COMMUNICATION</div>
-    <a class="nav-item" href="./pages/communications.html">
+    <a class="nav-item" href="./communications.html">
       <span class="nav-icon">💬</span>
       <span class="nav-label">Communications</span>
     </a>`;
@@ -1179,7 +1173,7 @@ async function fetchAndRenderTable(table, title){
           <tr>
             <td>
               <div class="cell-user">
-                <div class="avatar">${initials(row.name||row.title||row.username||String(row.id))}</div>
+                ${row.img ? `<img class="avatar" src="${row.img}" alt="${escapeHtml(row.name||'')}" style="object-fit:cover;">` : `<div class="avatar">${initials(row.name||row.title||row.username||String(row.id))}</div>`}
                 <div class="cell-user-info">
                   <div class="name">${row.name||row.title||row.username||'—'}</div>
                   <div class="sub">${row.email||row.description||''}</div>
@@ -1242,7 +1236,7 @@ async function viewRecord(table, id){
     </div>`).join('');
   openModal(`${tableLabel(table)} Details`, `
     <div class="profile-card" style="margin-bottom:20px">
-      <div class="profile-avatar-big">${initials(data.name||data.title||String(id))}</div>
+      ${data.img ? `<img class="profile-avatar-big" src="${data.img}" alt="${escapeHtml(data.name||'')}" style="object-fit:cover;">` : `<div class="profile-avatar-big">${initials(data.name||data.title||String(id))}</div>`}
       <div class="profile-info">
         <h2>${data.name||data.title||data.username||'Record #'+id}</h2>
         ${data.email?`<div style="color:var(--text-muted);font-size:14px">${data.email}</div>`:''}
@@ -1277,9 +1271,9 @@ async function deleteRecord(table, id){
 // ══ TABLE FIELD DEFINITIONS ════════════════════════════════
 function getTableFields(table){
   const FIELDS = {
-    teachers:     [{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
-    students:     [{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'},{n:'gradeId',l:'Grade ID',t:'text'},{n:'classId',l:'Class ID',t:'text'},{n:'parentId',l:'Parent ID',t:'text'}],
-    parents:      [{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'}],
+    teachers:     [{n:'img',l:'Photo',t:'img'},{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'}],
+    students:     [{n:'img',l:'Photo',t:'img'},{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'},{n:'bloodType',l:'Blood Type',t:'text'},{n:'sex',l:'Sex',t:'select',opts:['MALE','FEMALE']},{n:'birthday',l:'Birthday',t:'date'},{n:'gradeId',l:'Grade ID',t:'text'},{n:'classId',l:'Class ID',t:'text'},{n:'parentId',l:'Parent ID',t:'text'}],
+    parents:      [{n:'img',l:'Photo',t:'img'},{n:'username',l:'Username',t:'text',req:true},{n:'password',l:'Password',t:'text'},{n:'name',l:'Name',t:'text',req:true},{n:'surname',l:'Surname',t:'text'},{n:'email',l:'Email',t:'email'},{n:'phone',l:'Phone',t:'text'},{n:'address',l:'Address',t:'text'}],
     subjects:     [{n:'name',l:'Subject Name',t:'text',req:true}],
     classes:      [{n:'name',l:'Class Name',t:'text',req:true},{n:'capacity',l:'Capacity',t:'number'},{n:'gradeId',l:'Grade ID',t:'text'},{n:'supervisorId',l:'Supervisor ID',t:'text'}],
     lessons:      [{n:'name',l:'Lesson Name',t:'text',req:true},{n:'day',l:'Day',t:'select',opts:['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY']},{n:'startTime',l:'Start Time',t:'text'},{n:'endTime',l:'End Time',t:'text'},{n:'subjectId',l:'Subject ID',t:'text'},{n:'classId',l:'Class ID',t:'text'},{n:'teacherId',l:'Teacher ID',t:'text'}],
@@ -1315,6 +1309,23 @@ function buildForm(fields, mode, table, id='', data={}){
 
 function fieldHTML(f, data){
   const val = inputValue(data[f.n], f.t);
+
+  // Photo upload field
+  if(f.t === 'img'){
+    const preview = val ? `<img src="${escapeHtml(val)}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:10px;display:block;">` : `<div style="width:72px;height:72px;border-radius:50%;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:10px;">📷</div>`;
+    return `
+    <div class="form-group" style="grid-column:span 2;display:flex;align-items:center;gap:20px;padding:16px;background:var(--bg);border-radius:10px;border:1px dashed var(--border);">
+      <div id="img-preview-wrap">${preview}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Profile Photo</div>
+        <input type="file" id="img-upload-input" accept="image/*" onchange="handleImgUpload(this)" style="display:none;">
+        <input type="hidden" name="img" id="img-hidden-val" value="${escapeHtml(val)}">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('img-upload-input').click()">📷 ${val ? 'Change Photo' : 'Upload Photo'}</button>
+        <div id="img-upload-status" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
+      </div>
+    </div>`;
+  }
+
   if(f.t==='select') return `
     <div class="form-group">
       <label>${f.l}${f.req?' *':''}</label>
@@ -1333,6 +1344,35 @@ function fieldHTML(f, data){
       <label>${f.l}${f.req?' *':''}</label>
       <input type="${f.t}" name="${f.n}" value="${escapeHtml(val)}"${f.req?' required':''}>
     </div>`;
+}
+
+function handleImgUpload(input){
+  const file = input.files[0];
+  if(!file) return;
+  const status = document.getElementById('img-upload-status');
+  const hidden = document.getElementById('img-hidden-val');
+  const previewWrap = document.getElementById('img-preview-wrap');
+  status.textContent = 'Processing…';
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      const max = 300;
+      let w = img.width, h = img.height;
+      if(w > h){ h = Math.round(h * max/w); w = max; }
+      else { w = Math.round(w * max/h); h = max; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      hidden.value = dataUrl;
+      previewWrap.innerHTML = `<img src="${dataUrl}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--primary);margin-bottom:10px;display:block;">`;
+      status.textContent = '✅ Photo ready to save';
+      status.style.color = 'var(--success)';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 async function saveRecord(e, table, mode, id){
