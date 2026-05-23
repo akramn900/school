@@ -663,7 +663,7 @@ let calendarEvents = [];
     [tbAvatar, pmAvatar].forEach(el => {
       if (!el) return;
       el.style.background = 'var(--border)';
-      el.innerHTML = \`<img src="\${user.imageUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">\`;
+      el.innerHTML = '<img src="' + user.imageUrl + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
     });
   }
 })();
