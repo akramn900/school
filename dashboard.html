@@ -484,6 +484,58 @@ tr:hover td { background:#fafafa; }
 /* hide pages */
 .page { display:none; }
 .page.active { display:block; }
+
+/* ── PROFILE DROPDOWN ── */
+.profile-dropdown-wrap { position:relative; }
+.profile-trigger {
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:12px; padding:5px 10px 5px 5px;
+  cursor:pointer; transition:background .15s;
+}
+.profile-trigger:hover { background:var(--border); }
+.topbar-avatar {
+  width:32px; height:32px; border-radius:50%;
+  background:var(--primary); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:13px; flex-shrink:0;
+}
+.topbar-uname { font-size:13px; font-weight:600; color:var(--text); max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profile-caret { font-size:11px; color:var(--text-muted); transition:transform .2s; }
+.profile-caret.open { transform:rotate(180deg); }
+.profile-menu {
+  display:none; position:absolute; top:calc(100% + 8px); right:0;
+  width:240px; background:var(--white); border:1px solid var(--border);
+  border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.12);
+  z-index:200; overflow:hidden;
+}
+.profile-menu.open { display:block; }
+.profile-menu-header {
+  display:flex; align-items:center; gap:12px; padding:16px;
+}
+.profile-menu-avatar {
+  width:44px; height:44px; border-radius:50%; flex-shrink:0;
+  background:var(--primary); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; font-weight:700;
+}
+.profile-menu-name { font-weight:700; font-size:14px; color:var(--text); }
+.profile-menu-email { font-size:11px; color:var(--text-muted); margin-top:2px; word-break:break-all; }
+.profile-menu-role {
+  display:inline-block; margin-top:4px; font-size:10px; font-weight:600;
+  background:var(--sky); color:var(--primary); border-radius:6px; padding:2px 8px;
+  text-transform:uppercase; letter-spacing:.5px;
+}
+.profile-menu-divider { height:1px; background:var(--border); margin:0; }
+.profile-menu-item {
+  width:100%; text-align:left; background:none; border:none;
+  padding:11px 16px; font-size:13px; color:var(--text);
+  cursor:pointer; display:flex; align-items:center; gap:8px;
+  font-family:'DM Sans',sans-serif; transition:background .12s;
+}
+.profile-menu-item:hover { background:var(--bg); }
+.profile-menu-item.danger { color:var(--danger); }
+.profile-menu-item.danger:hover { background:#fff5f5; }
 </style>
 </head>
 <body>
@@ -515,7 +567,29 @@ tr:hover td { background:#fafafa; }
     <div class="topbar-actions">
 <button class="topbar-btn" onclick="openNotifications()" title="Notifications">🔔<span class="badge"></span></button>
 <button class="topbar-btn" onclick="openMessages()" title="Messages">✉️</button>
-<button class="topbar-btn" onclick="doLogout()" title="Logout">🚪</button>
+<!-- Profile dropdown -->
+<div class="profile-dropdown-wrap" id="profileWrap">
+  <button class="profile-trigger" id="profileTrigger" onclick="toggleProfileMenu()">
+    <div class="topbar-avatar" id="topbar-avatar">U</div>
+    <span class="topbar-uname" id="topbar-uname">User</span>
+    <span class="profile-caret" id="profileCaret">▾</span>
+  </button>
+  <div class="profile-menu" id="profileMenu">
+    <div class="profile-menu-header">
+      <div class="profile-menu-avatar" id="pm-avatar">U</div>
+      <div>
+        <div class="profile-menu-name" id="pm-name">User</div>
+        <div class="profile-menu-email" id="pm-email">—</div>
+        <div class="profile-menu-role" id="pm-role"></div>
+      </div>
+    </div>
+    <div class="profile-menu-divider"></div>
+    <button class="profile-menu-item" onclick="navigateTo('profile')">👤 My Profile</button>
+    <button class="profile-menu-item" onclick="navigateTo('settings')">⚙️ Settings</button>
+    <div class="profile-menu-divider"></div>
+    <button class="profile-menu-item danger" onclick="doLogout()">🚪 Sign out</button>
+  </div>
+</div>
     </div>
   </header>
 
@@ -568,6 +642,30 @@ let calendarEvents = [];
   if (nameEl)   nameEl.textContent   = user.name || user.username || 'User';
   if (roleEl)   roleEl.textContent   = (user.role||'').charAt(0).toUpperCase()+(user.role||'').slice(1);
   if (avatarEl) avatarEl.textContent = (user.name||user.username||'U')[0].toUpperCase();
+
+  // Populate topbar profile dropdown
+  const initial = (user.name||user.username||'U')[0].toUpperCase();
+  const tbAvatar = document.getElementById('topbar-avatar');
+  const tbName   = document.getElementById('topbar-uname');
+  const pmAvatar = document.getElementById('pm-avatar');
+  const pmName   = document.getElementById('pm-name');
+  const pmEmail  = document.getElementById('pm-email');
+  const pmRole   = document.getElementById('pm-role');
+  if (tbAvatar) tbAvatar.textContent = initial;
+  if (tbName)   tbName.textContent   = user.name || user.username || 'User';
+  if (pmAvatar) pmAvatar.textContent = initial;
+  if (pmName)   pmName.textContent   = user.name || user.username || 'User';
+  if (pmEmail)  pmEmail.textContent  = user.email || '—';
+  if (pmRole)   pmRole.textContent   = (user.role||'').charAt(0).toUpperCase()+(user.role||'').slice(1);
+
+  // If user has a profile image, show it instead of initials
+  if (user.imageUrl) {
+    [tbAvatar, pmAvatar].forEach(el => {
+      if (!el) return;
+      el.style.background = 'var(--border)';
+      el.innerHTML = \`<img src="\${user.imageUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">\`;
+    });
+  }
 })();
 
 function doLogout(){
@@ -1680,6 +1778,22 @@ document.getElementById('global-search').addEventListener('keydown', async e=>{
 // ══ INIT ══════════════════════════════════════════════════
 buildSidebar();
 renderPage('dashboard');
+
+// ── PROFILE DROPDOWN ────────────────────────────────────
+function toggleProfileMenu() {
+  const menu   = document.getElementById('profileMenu');
+  const caret  = document.getElementById('profileCaret');
+  const isOpen = menu.classList.contains('open');
+  menu.classList.toggle('open', !isOpen);
+  caret.classList.toggle('open', !isOpen);
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('profileWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('profileMenu').classList.remove('open');
+    document.getElementById('profileCaret').classList.remove('open');
+  }
+});
 </script>
 </body>
 </html>
