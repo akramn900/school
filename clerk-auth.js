@@ -1,42 +1,35 @@
 /**
- * clerk-auth.js
+ * clerk-auth.js  — v2
  * ─────────────────────────────────────────────────────────────────────────────
- * Drop this script (and the Clerk SDK script tag) into every page that needs
- * auth protection.  It will:
- *   1. Wait for Clerk to load
- *   2. If no active session → redirect to login
- *   3. Expose window.schoolUser (from localStorage) for the rest of the page
- *   4. Listen for sign-out and redirect to login
- * ─────────────────────────────────────────────────────────────────────────────
- * USAGE: Add to the <head> of every protected page:
+ * CORRECT SCRIPT ORDER in every protected page's <head>:
  *
- *   <script
- *     async crossorigin="anonymous"
- *     data-clerk-publishable-key="pk_test_Y_RzLmR1diQ"
- *     src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
- *   ></script>
- *   <script src="../js/clerk-auth.js"></script>
+ *   1.  <script data-clerk-publishable-key="pk_test_..."
+ *           src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js">
+ *       </script>
+ *   2.  <script src="./js/clerk-auth.js"></script>   ← always AFTER clerk SDK
+ *
+ * Both scripts are regular (not async/defer) so they execute in order.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 (function () {
   'use strict';
 
-  // ── helpers ────────────────────────────────────────────────────────────────
+  /* ── path helpers ─────────────────────────────────────────────────────── */
   function loginPath() {
-    const path = window.location.pathname;
-    // works for /school/pages/foo.html → /school/index.html
-    const parts = path.split('/');
-    // Find index.html relative to current depth
-    const depth = parts.filter(Boolean).length;
-    const up = depth > 1 ? '../'.repeat(depth - 1) : './';
-    return up + 'index.html';
+    const path  = window.location.pathname;          // e.g. /school/dashboard.html
+    const parts = path.split('/').filter(Boolean);   // ['school','dashboard.html']
+    // If we're in a sub-folder (pages/) go up two levels, else one
+    const depth = parts.length;                      // 2 for root, 3 for pages/
+    if (depth <= 1) return './index.html';           // root level
+    return '../'.repeat(depth - 1) + 'index.html';  // sub-level
   }
 
   function redirectToLogin() {
-    window.location.href = loginPath();
+    window.location.replace(loginPath());
   }
 
-  // ── expose school_user ─────────────────────────────────────────────────────
+  /* ── read school_user set by index.html after sign-in ─────────────────── */
   const raw = localStorage.getItem('school_user');
   if (!raw) { redirectToLogin(); return; }
 
@@ -44,48 +37,73 @@
   try { schoolUser = JSON.parse(raw); }
   catch (e) { localStorage.removeItem('school_user'); redirectToLogin(); return; }
 
+  // Expose immediately so any inline scripts can read it
   window.schoolUser = schoolUser;
 
-  // ── wait for Clerk, then validate session ──────────────────────────────────
-  window.addEventListener('load', async () => {
-    if (typeof Clerk === 'undefined') {
-      // Clerk SDK not present on this page – fail open for non-Clerk pages
-      return;
-    }
-    await Clerk.load();
+  /* ── wait for DOM+Clerk, then validate session ─────────────────────────── */
+  window.addEventListener('DOMContentLoaded', function initClerkAuth() {
 
-    if (!Clerk.user) {
-      // No active Clerk session
-      localStorage.removeItem('school_user');
-      redirectToLogin();
-      return;
-    }
+    // Clerk SDK may not have injected `window.Clerk` yet if it was async.
+    // Poll briefly (max 5 s) then give up gracefully (don't block the page).
+    let attempts = 0;
+    const maxAttempts = 100;
 
-    // Keep school_user in sync with fresh Clerk data
-    const u = Clerk.user;
-    schoolUser.name     = (u.firstName || '') + ' ' + (u.lastName || '');
-    schoolUser.email    = u.emailAddresses?.[0]?.emailAddress || schoolUser.email;
-    schoolUser.imageUrl = u.imageUrl || schoolUser.imageUrl;
-    localStorage.setItem('school_user', JSON.stringify(schoolUser));
-    window.schoolUser = schoolUser;
+    const poll = setInterval(async function () {
+      attempts++;
 
-    // React to sign-out anywhere in the session
-    Clerk.addListener(({ user }) => {
-      if (!user) {
+      if (typeof window.Clerk === 'undefined') {
+        if (attempts >= maxAttempts) {
+          clearInterval(poll);
+          console.warn('clerk-auth: Clerk SDK not available after 5 s – running without session validation');
+          document.dispatchEvent(new CustomEvent('clerkReady', { detail: schoolUser }));
+        }
+        return;
+      }
+
+      clearInterval(poll);
+
+      try {
+        await window.Clerk.load();
+      } catch (err) {
+        console.warn('clerk-auth: Clerk.load() failed –', err.message);
+        document.dispatchEvent(new CustomEvent('clerkReady', { detail: schoolUser }));
+        return;
+      }
+
+      if (!window.Clerk.user) {
+        // No active Clerk session – clear cache and go to login
         localStorage.removeItem('school_user');
         redirectToLogin();
+        return;
       }
-    });
 
-    // Fire a custom event so pages know auth is ready
-    document.dispatchEvent(new CustomEvent('clerkReady', { detail: schoolUser }));
+      // Sync fresh data from Clerk into school_user
+      const u = window.Clerk.user;
+      schoolUser.name     = ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || schoolUser.name;
+      schoolUser.email    = u.emailAddresses?.[0]?.emailAddress || schoolUser.email;
+      schoolUser.imageUrl = u.imageUrl || schoolUser.imageUrl || '';
+      localStorage.setItem('school_user', JSON.stringify(schoolUser));
+      window.schoolUser = schoolUser;
+
+      // Watch for sign-out in another tab
+      window.Clerk.addListener(function ({ user }) {
+        if (!user) {
+          localStorage.removeItem('school_user');
+          redirectToLogin();
+        }
+      });
+
+      document.dispatchEvent(new CustomEvent('clerkReady', { detail: schoolUser }));
+    }, 50);
   });
 
-  // ── sign-out helper available globally ────────────────────────────────────
+  /* ── global sign-out helper ────────────────────────────────────────────── */
   window.clerkSignOut = async function () {
-    if (typeof Clerk !== 'undefined') {
-      await Clerk.signOut();
-    }
+    try {
+      if (typeof window.Clerk !== 'undefined' && window.Clerk.signOut) {
+        await window.Clerk.signOut();
+      }
+    } catch (e) { /* ignore */ }
     localStorage.removeItem('school_user');
     redirectToLogin();
   };

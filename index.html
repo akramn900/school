@@ -7,11 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 
-<!-- ✅ CLERK: Replace YOUR_PUBLISHABLE_KEY below with your actual key from the screenshot -->
+<!--
+  ════════════════════════════════════════════════════════════════
+  IMPORTANT: Replace the key below with your FULL publishable key.
+  Get it from: Clerk Dashboard → API Keys → Publishable key
+  It looks like: pk_test_AbCdEfGhIjKlMnOpQrStUvWxYz...  (long string)
+  The value in the screenshot was truncated — use the full one.
+  ════════════════════════════════════════════════════════════════
+-->
 <script
-  async
-  crossorigin="anonymous"
-  data-clerk-publishable-key="pk_test_Y_RzLmR1diQ"
+  data-clerk-publishable-key="pk_test_YWxlcnQtY293LTMyLmNsZXJrLmFjY291bnRzLmRldiQ"
   src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
   type="text/javascript"
 ></script>
@@ -21,58 +26,60 @@
   --sky:#C3EBFA; --sky-light:#EDF9FD; --purple:#CFCEFF; --purple-light:#F1F0FF;
   --yellow:#FAE27C; --yellow-light:#FEFCE8; --bg:#F7F8FA; --white:#ffffff;
   --text:#1a1a2e; --text-muted:#6b7280; --border:#e5e7eb;
-  --primary:#4361EE; --primary-dark:#3451db; --danger:#ef4444; --radius:12px;
+  --primary:#4361EE; --primary-dark:#3451db; --danger:#ef4444;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;
-  display:flex;align-items:center;justify-content:center;flex-direction:column;
-  background-image:radial-gradient(circle at 20% 20%,rgba(195,235,250,.4) 0%,transparent 50%),
-  radial-gradient(circle at 80% 80%,rgba(207,206,255,.4) 0%,transparent 50%);}
-
-.card{background:var(--white);border-radius:20px;padding:40px;width:100%;max-width:460px;
-  margin:24px;box-shadow:0 4px 32px rgba(0,0,0,.09);border:1px solid var(--border);}
-
-.logo{text-align:center;margin-bottom:28px;}
+body{
+  font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  background-image:
+    radial-gradient(circle at 20% 20%,rgba(195,235,250,.4) 0%,transparent 50%),
+    radial-gradient(circle at 80% 80%,rgba(207,206,255,.4) 0%,transparent 50%);
+}
+.card{
+  background:var(--white);border-radius:20px;padding:36px 40px;
+  width:100%;max-width:440px;margin:0 20px;
+  box-shadow:0 4px 32px rgba(0,0,0,.09);border:1px solid var(--border);
+}
+.logo{text-align:center;margin-bottom:24px;}
 .logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;}
-.logo-icon{width:40px;height:40px;background:var(--primary);border-radius:10px;
-  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;}
+.logo-icon{
+  width:40px;height:40px;background:var(--primary);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;
+}
 .logo-text{font-family:'Playfair Display',serif;font-size:26px;color:var(--text);}
 .logo p{color:var(--text-muted);font-size:14px;}
 
-/* Role Selector */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
-  background:var(--bg);padding:4px;border-radius:10px;margin-bottom:22px;}
-.tab{padding:8px 4px;border:none;background:transparent;border-radius:8px;
+/* Role tabs */
+.tabs{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
+  background:var(--bg);padding:4px;border-radius:10px;margin-bottom:20px;
+}
+.tab{
+  padding:8px 4px;border:none;background:transparent;border-radius:8px;
   font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
-  color:var(--text-muted);cursor:pointer;transition:all .2s;}
+  color:var(--text-muted);cursor:pointer;transition:all .2s;
+}
 .tab.active{background:var(--white);color:var(--primary);box-shadow:0 1px 8px rgba(0,0,0,.1);}
 
-/* Clerk sign-in container */
-#clerk-sign-in{min-height:300px;display:flex;align-items:center;justify-content:center;}
+/* Clerk container */
+#clerk-mount{min-height:260px;display:flex;align-items:center;justify-content:center;}
 
-/* Loading state */
-.loading-msg{text-align:center;color:var(--text-muted);font-size:14px;padding:40px 0;}
-.loading-msg .spinner{width:32px;height:32px;border:3px solid var(--border);
-  border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+/* Spinner shown while Clerk loads */
+.spinner-wrap{text-align:center;color:var(--text-muted);font-size:13px;padding:20px 0;}
+.spin{
+  width:28px;height:28px;border:3px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 10px;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Signed-in redirect state */
-.redirect-card{text-align:center;padding:20px 0;}
-.redirect-card h3{font-size:18px;color:var(--text);margin-bottom:8px;}
-.redirect-card p{color:var(--text-muted);font-size:14px;margin-bottom:20px;}
-.btn{display:inline-block;padding:11px 28px;background:var(--primary);color:#fff;border:none;
-  border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
-  cursor:pointer;text-decoration:none;transition:background .2s;}
-.btn:hover{background:var(--primary-dark);}
-
-/* Role badge */
-.role-saved-badge{display:inline-flex;align-items:center;gap:6px;
-  background:var(--purple-light);color:var(--primary);border-radius:8px;
-  padding:5px 12px;font-size:13px;font-weight:500;margin-bottom:16px;}
-
-.info-box{background:var(--sky-light);border:1px solid var(--sky);border-radius:10px;
-  padding:12px 14px;font-size:12.5px;color:#0369a1;margin-top:16px;line-height:1.6;}
-.info-box strong{font-weight:600;}
+/* Error box */
+.err-box{
+  background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
+  padding:12px 16px;font-size:13px;color:var(--danger);line-height:1.6;
+  margin-top:8px;display:none;
+}
 </style>
 </head>
 <body>
@@ -86,7 +93,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;
     <p>Sign in to your account</p>
   </div>
 
-  <!-- Role selector (saved to localStorage so dashboard knows the role) -->
+  <!-- Role selector — saved to localStorage, picked up by dashboard -->
   <div class="tabs" id="role-tabs">
     <button class="tab active" data-role="admin"   onclick="setRole('admin')">Admin</button>
     <button class="tab"        data-role="teacher" onclick="setRole('teacher')">Teacher</button>
@@ -94,27 +101,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;
     <button class="tab"        data-role="parent"  onclick="setRole('parent')">Parent</button>
   </div>
 
-  <!-- Clerk renders its sign-in UI here -->
-  <div id="clerk-sign-in">
-    <div class="loading-msg">
-      <div class="spinner"></div>
+  <!-- Clerk mounts its sign-in widget here -->
+  <div id="clerk-mount">
+    <div class="spinner-wrap">
+      <div class="spin"></div>
       Loading secure sign-in…
     </div>
   </div>
-</div>
 
-<div class="info-box" style="max-width:460px;margin:0 24px 24px;">
-  <strong>🔐 Secure login powered by Clerk.</strong><br>
-  Select your role above, then sign in with email/password, Google, or magic link.<br>
-  Your role is remembered and used to redirect you to the right dashboard.
+  <div class="err-box" id="err-box"></div>
 </div>
 
 <script>
-// ─── ROLE SELECTION ────────────────────────────────────────────────
+// ── Role selection ────────────────────────────────────────────────────────────
 let selectedRole = localStorage.getItem('school_pending_role') || 'admin';
-document.querySelectorAll('.tab').forEach(t => {
-  t.classList.toggle('active', t.dataset.role === selectedRole);
-});
+document.querySelectorAll('.tab').forEach(t =>
+  t.classList.toggle('active', t.dataset.role === selectedRole));
 
 function setRole(r) {
   selectedRole = r;
@@ -123,59 +125,84 @@ function setRole(r) {
     t.classList.toggle('active', t.dataset.role === r));
 }
 
-// ─── PATH HELPER ───────────────────────────────────────────────────
+// ── Redirect path helper ──────────────────────────────────────────────────────
 function dashboardPath() {
   const path = window.location.pathname;
-  const dir = path.substring(0, path.lastIndexOf('/') + 1);
+  const dir  = path.substring(0, path.lastIndexOf('/') + 1);
   return dir + 'dashboard.html';
 }
 
-// ─── CLERK INIT ────────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  await Clerk.load();
+// ── Show error helper ─────────────────────────────────────────────────────────
+function showError(msg) {
+  const box = document.getElementById('err-box');
+  box.textContent = '⚠️ ' + msg;
+  box.style.display = 'block';
+}
 
-  if (Clerk.user) {
-    // Already signed in → save user info and redirect
-    finishLogin(Clerk.user);
-    return;
-  }
+// ── If already signed in, skip straight to dashboard ─────────────────────────
+const saved = localStorage.getItem('school_user');
+if (saved) {
+  try { JSON.parse(saved); window.location.replace(dashboardPath()); }
+  catch(e) { localStorage.removeItem('school_user'); }
+}
 
-  // Mount Clerk's built-in SignIn UI
-  const container = document.getElementById('clerk-sign-in');
-  container.innerHTML = ''; // remove spinner
-  Clerk.mountSignIn(container, {
-    afterSignInUrl: window.location.href,  // reload this page; we'll catch it above
-    afterSignUpUrl: window.location.href,
-    appearance: {
-      variables: {
-        colorPrimary: '#4361EE',
-        borderRadius: '10px',
-        fontFamily: "'DM Sans', sans-serif",
-      }
+// ── Init Clerk ────────────────────────────────────────────────────────────────
+(async function initClerk() {
+  try {
+    // Clerk SDK is loaded synchronously above, so window.Clerk is available now
+    if (typeof window.Clerk === 'undefined') {
+      showError('Clerk SDK failed to load. Check your internet connection and try again.');
+      document.getElementById('clerk-mount').innerHTML = '';
+      return;
     }
-  });
 
-  // Listen for sign-in completion
-  Clerk.addListener(({ user }) => {
-    if (user) finishLogin(user);
-  });
-});
+    await window.Clerk.load();
 
-function finishLogin(user) {
+    // Already signed in from another tab/session
+    if (window.Clerk.user) {
+      saveUserAndRedirect(window.Clerk.user);
+      return;
+    }
+
+    // Mount the built-in SignIn widget
+    const mountEl = document.getElementById('clerk-mount');
+    mountEl.innerHTML = ''; // remove spinner
+    window.Clerk.mountSignIn(mountEl, {
+      appearance: {
+        variables: {
+          colorPrimary:  '#4361EE',
+          borderRadius:  '10px',
+          fontFamily:    "'DM Sans', sans-serif",
+          colorBackground: '#ffffff',
+        },
+        layout: { socialButtonsVariant: 'iconButton' },
+      },
+    });
+
+    // Listen for completed sign-in
+    window.Clerk.addListener(({ user }) => {
+      if (user) saveUserAndRedirect(user);
+    });
+
+  } catch (err) {
+    showError('Could not initialize authentication: ' + err.message);
+    document.getElementById('clerk-mount').innerHTML = '';
+  }
+})();
+
+function saveUserAndRedirect(user) {
   const role = selectedRole || localStorage.getItem('school_pending_role') || 'admin';
-  const school_user = {
-    id: user.id,
+  localStorage.setItem('school_user', JSON.stringify({
+    id:       user.id,
     username: user.username || user.emailAddresses?.[0]?.emailAddress || user.id,
-    name: (user.firstName || '') + ' ' + (user.lastName || ''),
-    email: user.emailAddresses?.[0]?.emailAddress || '',
+    name:     ((user.firstName || '') + ' ' + (user.lastName || '')).trim(),
+    email:    user.emailAddresses?.[0]?.emailAddress || '',
     imageUrl: user.imageUrl || '',
-    role: role,
-    clerkId: user.id,
-  };
-  localStorage.setItem('school_user', JSON.stringify(school_user));
-  localStorage.setItem('school_token', `clerk-${user.id}`);
+    role:     role,
+    clerkId:  user.id,
+  }));
   localStorage.removeItem('school_pending_role');
-  window.location.href = dashboardPath();
+  window.location.replace(dashboardPath());
 }
 </script>
 </body>
