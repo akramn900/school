@@ -17,8 +17,12 @@
 
   // ── Path helpers ────────────────────────────────────────────────────────────
   function loginPath() {
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    return parts.length <= 1 ? './index.html' : '../'.repeat(parts.length - 1) + 'index.html';
+    // Use absolute path so it works on GitHub Pages (/school/...) and plain hosts alike
+    const parts = window.location.pathname.split('/');
+    const pagesIdx = parts.lastIndexOf('pages');
+    const rootParts = pagesIdx !== -1 ? parts.slice(0, pagesIdx) : parts.slice(0, -1);
+    const root = rootParts.join('/') + '/';
+    return root + 'index.html';
   }
   function redirectToLogin() {
     window.location.replace(loginPath());
