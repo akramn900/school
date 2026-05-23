@@ -570,11 +570,21 @@ let calendarEvents = [];
 })();
 
 function doLogout(){
-  if (typeof clerkSignOut === 'function') {
-    clerkSignOut();           // signs out of Clerk + clears localStorage
+  // Set flag FIRST so clerk-auth.js doesn't bounce user back
+  localStorage.setItem('clerk_signing_out', '1');
+  localStorage.removeItem('school_user');
+  window.schoolUser = null;
+  if (typeof window.Clerk !== 'undefined' && window.Clerk.signOut) {
+    window.Clerk.signOut().then(() => {
+      localStorage.removeItem('clerk_signing_out');
+      window.location.replace('./index.html');
+    }).catch(() => {
+      localStorage.removeItem('clerk_signing_out');
+      window.location.replace('./index.html');
+    });
   } else {
-    localStorage.removeItem('school_user');
-    window.location.replace('index.html');
+    localStorage.removeItem('clerk_signing_out');
+    window.location.replace('./index.html');
   }
 }
 
@@ -819,6 +829,23 @@ async function renderDashboard(){
   });
 
   c.innerHTML = `
+  <!-- Date / Time Banner -->
+  <div id="dash-datetime" style="
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(135deg,#4361EE 0%,#7c3aed 100%);
+    border-radius:14px;padding:18px 24px;margin-bottom:20px;color:#fff;
+    box-shadow:0 4px 20px rgba(67,97,238,.3);">
+    <div>
+      <div id="dash-clock" style="font-size:36px;font-weight:800;letter-spacing:-1px;line-height:1;">00:00:00</div>
+      <div id="dash-date"  style="font-size:14px;opacity:.85;margin-top:4px;font-weight:500;"></div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:13px;opacity:.8;margin-bottom:4px;">Welcome back,</div>
+      <div style="font-size:18px;font-weight:700;">${currentUser?.name || currentUser?.username || 'User'}</div>
+      <div style="font-size:12px;opacity:.75;margin-top:2px;text-transform:capitalize;">${currentUser?.role || 'Admin'} Dashboard</div>
+    </div>
+  </div>
+
   <!-- Stats -->
   <div class="stats-grid">
     <div class="stat-card">
@@ -901,6 +928,29 @@ async function renderDashboard(){
 
   // Build calendar
   buildMiniCal(calendarEvents);
+
+  // Live clock — updates every second
+  (function startClock(){
+    function tick(){
+      const now = new Date();
+      const clockEl = document.getElementById('dash-clock');
+      const dateEl  = document.getElementById('dash-date');
+      if (!clockEl) return; // navigated away
+      const h = String(now.getHours()).padStart(2,'0');
+      const m = String(now.getMinutes()).padStart(2,'0');
+      const s = String(now.getSeconds()).padStart(2,'0');
+      clockEl.textContent = h + ':' + m + ':' + s;
+      dateEl.textContent  = now.toLocaleDateString('en-GB',{
+        weekday:'long', year:'numeric', month:'long', day:'numeric'
+      });
+    }
+    tick();
+    const timer = setInterval(tick, 1000);
+    // Stop ticking if user navigates away (element disappears)
+    const guard = setInterval(() => {
+      if (!document.getElementById('dash-clock')) { clearInterval(timer); clearInterval(guard); }
+    }, 2000);
+  })();
 
   // Attendance Chart
   const attCtx = document.getElementById('att-chart').getContext('2d');
