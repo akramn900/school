@@ -229,13 +229,14 @@ const API = (() => {
   }
 
   function logout() {
-    // Navigate to logout.html (at project root) which loads the Clerk SDK,
-    // calls Clerk.signOut() to destroy the session cookie, clears localStorage,
-    // then redirects to index.html.
-    // This works from any depth (root pages or pages/ subfolder).
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    const prefix = parts.length > 1 ? '../'.repeat(parts.length - 1) : './';
-    window.location.href = prefix + 'logout.html';
+    // Build an absolute path to logout.html by finding the repo root.
+    // Works on GitHub Pages (e.g. /school/pages/x.html → /school/logout.html)
+    // and on any other host (e.g. /pages/x.html → /logout.html).
+    const parts = window.location.pathname.split('/');
+    const pagesIdx = parts.lastIndexOf('pages');
+    const rootParts = pagesIdx !== -1 ? parts.slice(0, pagesIdx) : parts.slice(0, -1);
+    const root = rootParts.join('/') + '/';
+    window.location.href = root + 'logout.html';
   }
 
   function listResource(resource, params) { return get(resource, params); }

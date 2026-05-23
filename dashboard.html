@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <!-- Clerk SDK — load first, no async/defer -->
   <script
-    data-clerk-publishable-key="pk_test_YWxlcnQtY293LTMyLmNsZXJrLmFjY291bnRzLmRldiQ"
+    data-clerk-publishable-key="pk_live_Y2xlcmsuYWtyYW1zY2hvb2wucGFnZXMuZGV2JA"
     src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
     type="text/javascript"
   ></script>
@@ -584,8 +584,8 @@ tr:hover td { background:#fafafa; }
       </div>
     </div>
     <div class="profile-menu-divider"></div>
-    <button class="profile-menu-item" onclick="navigateTo('profile')">👤 My Profile</button>
-    <button class="profile-menu-item" onclick="navigateTo('settings')">⚙️ Settings</button>
+    <button class="profile-menu-item" onclick="window.location.href='./pages/profile.html'">👤 My Profile</button>
+    <button class="profile-menu-item" onclick="window.location.href='./pages/settings.html'">⚙️ Settings</button>
     <div class="profile-menu-divider"></div>
     <button class="profile-menu-item danger" onclick="doLogout()">🚪 Sign out</button>
   </div>
