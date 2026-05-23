@@ -513,9 +513,9 @@ tr:hover td { background:#fafafa; }
       <input type="text" placeholder="Search…" id="global-search">
     </div>
     <div class="topbar-actions">
-      <div class="topbar-btn" title="Notifications">🔔<span class="badge"></span></div>
-      <div class="topbar-btn" title="Messages">✉️</div>
-      <div class="topbar-btn" onclick="doLogout()" title="Logout" style="cursor:pointer">🚪</div>
+<button class="topbar-btn" onclick="openNotifications()" title="Notifications">🔔<span class="badge"></span></button>
+<button class="topbar-btn" onclick="openMessages()" title="Messages">✉️</button>
+<button class="topbar-btn" onclick="doLogout()" title="Logout">🚪</button>
     </div>
   </header>
 
@@ -540,6 +540,7 @@ tr:hover td { background:#fafafa; }
 <div class="toast-container" id="toast-container"></div>
 
 <script>
+  
 // ══ CONFIG ═══════════════════════════════════════════════
 const SUPABASE_URL  = 'https://ihjcblkiutrnstoxokcv.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloamNibGtpdXRybnN0b3hva2N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MzQ5NjAsImV4cCI6MjA5NTAxMDk2MH0.wKXCGDwLHRDEP6su2Uft0xp8eEC32_WA0Ch32Ba4LhI';
@@ -693,6 +694,30 @@ function openModal(title, bodyHTML){
 }
 function closeModal(e){ if(e.target===document.getElementById('modal-overlay')) closeModalDirect(); }
 function closeModalDirect(){ document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ADD HERE ↓
+function openNotifications(){
+  openModal('Notifications', `
+    <div class="empty-state">
+      <div class="empty-icon">🔔</div>
+      <p>No new notifications</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModalDirect()">Close</button>
+    </div>
+  `);
+}
+function openMessages(){
+  openModal('Messages', `
+    <div class="empty-state">
+      <div class="empty-icon">✉️</div>
+      <p>No new messages</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModalDirect()">Close</button>
+    </div>
+  `);
+}  
 
 // ══ HELPERS ═══════════════════════════════════════════════
 function initials(name){
