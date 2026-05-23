@@ -499,6 +499,16 @@ window.addEventListener('load', async () => {
 
     await window.Clerk.load();
 
+    // If we arrived here from a logout, force-sign-out from Clerk before
+    // checking Clerk.user — otherwise Clerk still sees an active session
+    // and finishLogin() would redirect straight back to the dashboard.
+    const isLoggingOut = new URLSearchParams(window.location.search).get('logout') === '1'
+      || sessionStorage.getItem('school_logging_out') === '1';
+    sessionStorage.removeItem('school_logging_out');
+    if (isLoggingOut && window.Clerk.user) {
+      try { await window.Clerk.signOut(); } catch (_) {}
+    }
+
     // Handle magic link return
     if (window.Clerk.client?.signIn?.status === 'complete') {
       await window.Clerk.setActive({ session: window.Clerk.client.signIn.createdSessionId });
